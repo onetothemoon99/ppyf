@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "blender": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "blender-mcp"
+      ]
+    },
+    "Roblox_Studio": {
+      "type": "stdio",
+      "command": "C:/Users/One/AppData/Local/Roblox/mcp.bat",
+      "args": []
+    }
+  }
+}
