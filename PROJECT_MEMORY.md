@@ -79,6 +79,7 @@ Notes about this Roblox game so another machine does not have to re-read the cod
 - [Daniweii3 bag loss](daniweii3-bag-loss.md) — bag wipe 10-20/21 cause unknown, merge-restored; JoeZaika087/EIMUUNOII suspicious; DataStore versions hourly + Studio List throttle gotcha
 - [Custom matchmaking](custom-matchmaking.md) — Occupancy 10 / play history 0 etc. applied live 2026-10-22 11:06 to stop new players landing in empty servers; verify via solo 1-player servers
 - [Zukzon dog pet](zukzon-dog-pet.md) — ซุกซน chihuahua, owner-only tier ลึกลับ (Mythic); built 2026-10-22 (since 10-23 no abilities, no luck — only owner hug +10%, free slot, sit/sleep; /give zukzon), not published
+- [Donation announce](donation-announce.md) — donate + message shown on every server 12 s (DonationAnnounceConfig/DonationAnnounce/DonationAnnounceGui), built 2026-10-24, not published, real purchase untested
 
 
 ---
@@ -2873,4 +2874,21 @@ Built 2026-10-22 (Studio only):
 - During the test the user brought Zukzon out themself in Studio (fake key DevPetKeyOverride, since cleared) — their real PetSettings_v1 may list Zukzon as active.
 
 **How to apply:** look/patch tweaks go on the template + `Patches`; hug pose = `HOLD_OFFSET` in ZukzonService and `HUG_POSE` in the client. Related: [[admin-give]], [[carry-system]], [[dev-pet-key-override-gotcha]], [[scarecrow-ghost-pet]].
+
+## donation-announce
+
+Built 2026-10-24 (Studio only, not published). It reuses the existing donation window and its 7 Developer Products (DonationConfig); there are no new products.
+- `ReplicatedStorage.DonationAnnounceConfig`: Enabled, MAX_LENGTH 80, SHOW_TIME 12, COOLDOWN 60, PENDING_TIME 300, TOPIC "DonationAnnounce_v1", `HasLink` (lowercased, spaces removed; http/www/.com/.gg/.co/.th…, discord/youtu/tiktok, ดอทคอม/จุดคอม, plus any `%w.%a%a`), `Clean`, `Length` (utf8).
+- `ServerScriptService.DonationAnnounce` (ModuleScript, required by PlantingSystem next to DonorRecords): RemoteFunction `DonationAnnounceRequest` actions check(text, productId) / clear / status.
+  - check: length, link, cooldown, `TextChatService:CanUserChatAsync`, filter (GetNonChatStringForBroadcastAsync), reject if more than half is `#`. On success it stores pending[userId] = {text, productId}.
+  - `OnDonated(receiptInfo, donor, spent)` is called from the donation grant only when DonorRecords says the receipt is new. It announces only if the pending productId matches.
+  - Fires RemoteEvent `DonationAnnounce` to all + MessagingService (own server skipped by JobId).
+  - Log: DataStore DonationAnnounce_v1 key `log` (last 200) and `settings` {off}. Studio keys are prefixed `studio:`.
+  - Owner commands /announceoff /announceon /clearannounce (cross-server).
+  - Pending messages and cooldowns are per server, in memory.
+- `StarterPlayerScripts.DonationAnnounceGui`: banner with a dark purple box and a rotating gold-pink UIStroke gradient. The user asked for it to stand out (2026-10-24), so it is the one exception to the no-background notification rule. Width fits the text (340–620). It also has a queue, chat system message; {Clear=true} hides it. Position (2026-10-24, user asked it to fit the restart notice): DeviceSafeInsets like RestartNoticeGui, y 59 = the restart panel's line, under the centre music button; while `RestartEndsAt` is set it moves to y 107 under the restart card (and re-tweens if that attribute changes while showing). The donate button icon is 📢 (TextLabel `Icon`), not the Robux icon.
+- Top-centre overlap fix (2026-10-24): the banner shares the top centre with HarvestNotifyGui's SoftStack (y 20, CoreUI insets) and DonationGui's thanks toast (y 72). DonationAnnounceGui sets client-side player attributes `TopBannerBottom` (banner bottom in AbsolutePosition px, 0 = none) and `TopBannerUserId`; SoftStack and the thanks toast move to `bottom - theirGui.AbsolutePosition.Y + 6` while it shows. The header reads "💖 ขอบคุณ <name> ที่สนับสนุน X R$", and the donor's own thanks toast is skipped while their banner shows (DonationGui waits 0.6 s, because the server sends thanks before the announcement). Any new top-centre notice should follow `TopBannerBottom` too.
+- `DonationGui`: an amount button opens `AnnouncePopup` (Header, MessageBox, Buttons.AnnounceButton / Buttons.DonateOnlyButton). "Donate only" calls clear first, so an old pending message is not used.
+- Studio test: `ServerStorage.DonationAnnounceTest:Fire(player, amount)` fakes a receipt for the pending message (firing it from execute_luau on the Server works). The Studio purchase prompt blocks clicks on the game UI until it is closed. Backups `_Backup_20261024.*_before_donateannounce`.
+- Tested in Play: popup, link block, check → prompt, banner, cooldown. Not tested: real purchase, cross-server, phone, gamepad, admin commands, the filter in the live game.
 
