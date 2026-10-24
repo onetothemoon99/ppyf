@@ -461,3 +461,25 @@ for _, r in ipairs(list) do
   print(os.date("!%m-%d %H:%M:%S", r.t + 7*3600), r.kind, r.name, r.userId, r.target, "handoffMs=" .. tostring(r.handoffMs), "delaySec=" .. tostring(r.delaySec), "ping=" .. tostring(r.ping), r.server and r.server.job and r.server.job:sub(1,8))
 end
 ```
+
+### เพิ่มตัวจดขั้น "กลับมาตกปลาต่อ" — 24 ต.ค. ~11:00 (Studio เท่านั้น ยังไม่ Publish)
+
+ที่มา: ผู้เล่นแจ้ง ขี่สัตว์ + AFK ตกปลา กลับมาแล้วไม่ถือเบ็ด — อ่านโค้ดแล้วไม่พบกลไกที่ทำให้เบ็ดหลุดเพราะการขี่ (ระบบสัตว์ขี่ไม่แตะ Tool, ระบบตกปลาแค่หยุดตก/ทำลายทุ่น ไม่เก็บเบ็ด, จำลองใน Studio 20 ต.ค. ผ่าน) จึงเพิ่มตัวจดไว้หาหลักฐานครั้งหน้า
+
+- เข้ามาด้วย AFK rejoin ที่มีข้อมูลตกปลา = เริ่มจด (`AfkRejoin`): `arrive` (เบ็ด/ออโต้/สัตว์/เก้าอี้ที่ควรได้), `spawnPlaced`, `ride` (ผลสั่งขี่ หรือ skip:เหตุผล), `sit`, `rodHeld`/`rodLeftHand` (ถือ/เก็บเบ็ด), `riding`, `auto`, `bobber` (ทุ่นแรก), `respawn` (ตัวละครเกิดใหม่), `client` (เครื่องผู้เล่นรายงานว่าหาเบ็ดเจอไหม/รอกี่วิ/ถือสำเร็จไหม) พร้อมเวลาที่เกิด (วินาทีนับจากเข้ามา)
+- ครบ 60 วิ ถ้าไม่ครบตามที่ควร (ไม่ถือเบ็ดเดิม `noRod`/`wrongRod`, ไม่ได้ขี่ `notRiding`, ออโต้ไม่เปิด `autoOff`) = เขียน 1 รายการ `resume-incomplete` ที่ DataStore `AfkRejoinWatch_v1` key `resume` (100 รายการล่าสุด); ครบตามที่ควร = ไม่เขียนอะไร
+- ทดสอบ: รันบล็อกจริงกับผู้เล่นจำลองใน Edit mode 12 ข้อผ่าน (สำเร็จไม่เขียน / ปัญหาเขียน / เบ็ดผิดอัน / ค่ารายงานเพี้ยนถูกตัด / จำกัด 24 เหตุการณ์); ล้างคีย์ทดสอบแล้ว
+- **ยังไม่ได้ทดสอบ:** ฝั่งเครื่องผู้เล่น (คอมไพล์ผ่านอย่างเดียว) และการย้ายเซิร์ฟจริง — ไม่ได้กดเล่นใน Studio เพราะบัญชีเจ้าของออนไลน์ในเกมจริงอยู่ (AFK rejoin) กันเซฟทับ
+- สำรอง: `ServerStorage._Backup_20261024.AfkRejoin_before_resumetrace`, `AfkRejoinClient_before_resumetrace`
+
+**วิธีอ่านหลัง Publish** (Studio, Edit):
+```lua
+local list = game:GetService("DataStoreService"):GetDataStore("AfkRejoinWatch_v1"):GetAsync("resume") or {}
+for _, r in ipairs(list) do
+  print(os.date("!%m-%d %H:%M:%S", r.t + 7*3600), r.name, table.concat(r.problems, ","),
+    "expected rod=" .. tostring(r.expected.rod), "mount=" .. tostring(r.expected.mount),
+    "held=" .. tostring(r.actual.held), "riding=" .. tostring(r.actual.riding), "bag=" .. table.concat(r.actual.bag, "/"))
+  print("   ev: " .. table.concat(r.ev, " | "))
+  print("   client: " .. game:GetService("HttpService"):JSONEncode(r.client or {}))
+end
+```
