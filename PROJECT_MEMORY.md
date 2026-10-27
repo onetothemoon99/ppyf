@@ -72,6 +72,7 @@ Notes about this Roblox game so another machine does not have to re-read the cod
 - [Community reward](community-reward.md) — 👥 join group 642396060 → 5 Premium tickets once (CommunityReward/CommunityRewardGui), 2026-10-15, not published
 - [Player behavior analysis](player-behavior-analysis.md) — retention from DataStores (method + gotchas); 2026-10-16: new-player median playtime fell ~30 → ~3 min after Oct 12, new joins 82/day → ~10-20
 - [Tester accounts](tester-accounts.md) — CtrlZ_2 (11611605711) is a tester: its cheat flags are expected, don't investigate
+- [Voice check](voice-check.md) — new-player mic diagnosis + hint cards (VoiceHint/VoiceCheckReport → DisconnectLogs health.voice), 2026-10-27, not play-tested, not published
 - [Wishing pond](wishing-pond.md) — lotus lake dock: throw 8 produce → fairy → Birthday/Creative wish (cosmetic, can target a friend in the server; birthday = gifts + song), 2026-10-18, not published, not tested with 2 players
 - [LoadCharacter bag wipe](loadcharacter-bag-wipe.md) — LoadCharacter() empties the bag (no Died snapshot) → cause of owner bag loss 2026-10-15; DevInventoryKeyOverride set to fake key; both bag guards built 2026-10-15 (respawn restore + shrink block), not published
 - [Birthday event](birthday-event.md) — 🎂 อรพรวันเกิด 2026-10-19 17:00–24:00: gift box + countdown, wish VXLLLYN at pond → rewards, navigation; HIDDEN 2026-10-21 (Enabled = false, dev switches removed)
@@ -2906,3 +2907,13 @@ Built 2026-10-24 (Studio only, not published). It reuses the existing donation w
 - Studio test: `ServerStorage.DonationAnnounceTest:Fire(player, amount)` fakes a receipt for the pending message (firing it from execute_luau on the Server works). The Studio purchase prompt blocks clicks on the game UI until it is closed. Backups `_Backup_20261024.*_before_donateannounce`.
 - Tested in Play: popup, link block, check → prompt, banner, cooldown. Not tested: real purchase, cross-server, phone, gamepad, admin commands, the filter in the live game.
 
+
+## voice-check
+
+Report 2026-10-27: new players "open the mic but friends can't hear". Inspection: VoiceChatService EnableDefaultVoice=true, UseAudioApi=Enabled, DefaultDistanceAttenuation=Legacy (silent beyond 80 studs); in Play Roblox creates Player.AudioDeviceInput, character AudioEmitter, Camera AudioListener, SoundService.AudioDeviceOutput; no game script touches voice. Likely causes: >80 studs apart, different servers, Roblox voice eligibility / OS mic permission.
+
+Built (Studio only, not published, not play-tested):
+- `StarterPlayerScripts.VoiceHint` (IsNewPlayer only): reports state, wires own AudioDeviceInput → AudioAnalyzer; card "hint" when still muted after 45 s; card "far" after 3 s of speech with nobody within 80 studs (kinds alone / friend / none). Once each per session, same look as SlowDeviceHint, waits while that card is up. Studio: `workspace.DevVoiceCheck` = true / "hint" / "far".
+- `ServerScriptService.VoiceCheckReport` → player attr `VoiceCheckLog` (max 16 events; server measures near/in/n itself) → `DisconnectLogger` stores it in `entry.health.voice` on leave (no extra DataStore writes).
+
+**How to apply:** to diagnose, read `health.voice` of new players in DisconnectLogs_v1: en=0 = no Roblox voice for that account; dev=0 / nodev = no mic device; mute stays 1 = never unmuted; silent = unmuted but no signal (OS mic permission / broken mic); talk near>80 or far k=alone = distance / different server. Related: [[custom-matchmaking]], [[voice-indicator]].
