@@ -11,7 +11,7 @@ Notes about this Roblox game so another machine does not have to re-read the cod
 - [Fishing plan](fishing-plan.md) — fishing decisions, 7-step build order, all 7 steps done 2026-09-27 (rods, fish, minigame/auto, shop+bait, fish index, otter, announce+event fish); otter now needs the whole book (2026-10-01); AUTO-ONLY since 2026-10-18 (no minigame)
 - [Live session overlap](live-session-overlap.md) — user may be playing LIVE on the same account during Studio tests; check before DataStore snapshot/restore
 - [Pet gacha plan](pet-gacha-plan.md) — design, build order + progress of the pet gacha machine (all 6 steps done 2026-09-24; open: pricing, UNLOCK_ALL before publish)
-- [Tutorial](tutorial.md) — new-player tutorial (TutorialService/TutorialGui); v2 since 2026-10-18 = 8 core + 3 bonus steps · 🧭 guide + ▶ AUTO buttons 2026-10-24, free seeds, eye-level 3D arrow, TutorialGate holds join popups, per-step `times` stats
+- [Tutorial](tutorial.md) — ⛔ DISABLED 2026-10-27 (both scripts Enabled=false, TutorialGate.ENABLED=false, 📘 off the ☰ menu; StarterGift now gives new players 5 wheat seeds + booster at once) · new-player tutorial (TutorialService/TutorialGui); v2 since 2026-10-18 = 8 core + 3 bonus steps · 🧭 guide + ▶ AUTO buttons 2026-10-24, free seeds, eye-level 3D arrow, TutorialGate holds join popups, per-step `times` stats
 - [VIP title system](vip-title-system.md) — VIP Game Pass overhead title (VipService/VipGui/PlayerNameTags), pass 2001938429; VIP gift to a friend via Developer Product 3715821322 (2026-10-01, NOT yet live-tested by the user)
 - [Sultan pack](sultan-pack.md) — 999 R$ pass above VIP (id 2002700579): contents + build notes; all done, live purchase confirmed 2026-09-30; gift to a friend (product 3715827793) added 2026-10-01, not live-tested
 - [Luck balance](luck-balance.md) — scarecrow luck 20 / 50; pet luck sultan dragon 50 / fox 30 / legendary 15 (2026-10-02); real-luck formula; golden scarecrow gift to a friend (product 3715868092, 2026-10-02, not live-tested)
@@ -72,6 +72,7 @@ Notes about this Roblox game so another machine does not have to re-read the cod
 - [Community reward](community-reward.md) — 👥 join group 642396060 → 5 Premium tickets once (CommunityReward/CommunityRewardGui), 2026-10-15, not published
 - [Player behavior analysis](player-behavior-analysis.md) — retention from DataStores (method + gotchas); 2026-10-16: new-player median playtime fell ~30 → ~3 min after Oct 12, new joins 82/day → ~10-20
 - [Tester accounts](tester-accounts.md) — CtrlZ_2 (11611605711) is a tester: its cheat flags are expected, don't investigate
+- [Voice check](voice-check.md) — new-player mic diagnosis + hint cards (VoiceHint/VoiceCheckReport → DisconnectLogs health.voice), 2026-10-27, not play-tested, not published
 - [Wishing pond](wishing-pond.md) — lotus lake dock: throw 8 produce → fairy → Birthday/Creative wish (cosmetic, can target a friend in the server; birthday = gifts + song), 2026-10-18, not published, not tested with 2 players
 - [LoadCharacter bag wipe](loadcharacter-bag-wipe.md) — LoadCharacter() empties the bag (no Died snapshot) → cause of owner bag loss 2026-10-15; DevInventoryKeyOverride set to fake key; both bag guards built 2026-10-15 (respawn restore + shrink block), not published
 - [Birthday event](birthday-event.md) — 🎂 อรพรวันเกิด 2026-10-19 17:00–24:00: gift box + countdown, wish VXLLLYN at pond → rewards, navigation; HIDDEN 2026-10-21 (Enabled = false, dev switches removed)
@@ -2644,6 +2645,15 @@ AUTO test results 2026-10-24: plant (walk ~90 studs + 5 plants) and sell (walk +
 AUTO sell/buy 2026-10-24 (user asked AUTO to actually sell): autoShop fires SellCrop for every non-starred Wheat produce stack (else 1 other produce) and BuySeed("Wheat", 5), then hides ShopGui.Frame (ShopGui closeShop only does Frame.Visible = false). Play-tested sell -> buy -> fish (caught in 5 s) in one run; a shop window left open blocks the next GUI step because bigWindowOpen() skips pressing the prompt.
 AUTO gacha 2026-10-24: GachaGui has BindableEvent GachaGui.TutorialAuto ("buy1" = buyTickets(1) on the Normal tab, "roll1" = doRequest("roll", 1)); TutorialGui autoGacha fires it at steps 6/7 and refires only if Normal tickets did not change in 8 s (max 3). Free first ticket comes from FreeNormalTicket as before; otherwise it pays 20,000 coins. Play-tested both paid and free paths. AUTO waits while the TutorialGui popup (e.g. core-done) is visible; on the dev account step 8 petUse passes at once because pets already exist.
 
+TUTORIAL DISABLED 2026-10-27 (user: "ปรับยกเลิกระบบสอนบทเรียนใหม่ ที่เกียวข้องทั้งหมด"; this replaces everything above as the live behaviour). Nothing was deleted and Tutorial_v1 was not touched.
+- TutorialService + TutorialGui: Enabled = false (the first-line comment says how to re-enable). TutorialStep is no longer set, so there is no reward, no free first gacha ticket and no TutorialRequest remote.
+- TutorialGate.ENABLED = false, so Wait() returns at once. IMPORTANT: without this, LoginAnnouncementGui / CompensationGui / SlowDeviceHint wait 25 s for a TutorialStep that never comes.
+- MoreMenuGui: the 📘 entry is commented out (updateTutorialEntry does nothing without its label).
+- StarterGift: new players (IsNewPlayer) get 5 Wheat seeds (giveStarterSeeds, merged into an existing wheat seed stack) and the x100 booster at once (the booster used to wait for tutorial completion). The new-player message is Thai/English via Localization.Pick.
+- Leftovers that do nothing now and are safe: GachaService TutorialStep==7 signal + FreeNormalTicket path, GachaGui TutorialAuto, VipGui (TutorialStep or 0), ChickenYardClient step-15 check.
+- To re-enable: Enabled = true on both scripts, TutorialGate.ENABLED = true, restore the MoreMenuGui ENTRIES line. Also decide about StarterGift: TutorialService still gives 5 seeds at step 1 (once per account, starterSeedsGiven), so a new player would get 10, and the booster would come twice.
+- Backups ServerStorage._Backup_20261027.*_before_tutorialoff. Play-tested: no tutorial UI, the gate returns at once, the menu is fine, no errors. The StarterGift seed path was not tested with a real new account. Not published.
+
 
 ---
 
@@ -2907,3 +2917,13 @@ Built 2026-10-24 (Studio only, not published). It reuses the existing donation w
 - Studio test: `ServerStorage.DonationAnnounceTest:Fire(player, amount)` fakes a receipt for the pending message (firing it from execute_luau on the Server works). The Studio purchase prompt blocks clicks on the game UI until it is closed. Backups `_Backup_20261024.*_before_donateannounce`.
 - Tested in Play: popup, link block, check → prompt, banner, cooldown. Not tested: real purchase, cross-server, phone, gamepad, admin commands, the filter in the live game.
 
+
+## voice-check
+
+Report 2026-10-27: new players "open the mic but friends can't hear". Inspection: VoiceChatService EnableDefaultVoice=true, UseAudioApi=Enabled, DefaultDistanceAttenuation=Legacy (silent beyond 80 studs); in Play Roblox creates Player.AudioDeviceInput, character AudioEmitter, Camera AudioListener, SoundService.AudioDeviceOutput; no game script touches voice. Likely causes: >80 studs apart, different servers, Roblox voice eligibility / OS mic permission.
+
+Built (Studio only, not published, not play-tested):
+- `StarterPlayerScripts.VoiceHint` (IsNewPlayer only): reports state, wires own AudioDeviceInput → AudioAnalyzer; card "hint" when still muted after 45 s; card "far" after 3 s of speech with nobody within 80 studs (kinds alone / friend / none). Once each per session, same look as SlowDeviceHint, waits while that card is up. Studio: `workspace.DevVoiceCheck` = true / "hint" / "far".
+- `ServerScriptService.VoiceCheckReport` → player attr `VoiceCheckLog` (max 16 events; server measures near/in/n itself) → `DisconnectLogger` stores it in `entry.health.voice` on leave (no extra DataStore writes).
+
+**How to apply:** to diagnose, read `health.voice` of new players in DisconnectLogs_v1: en=0 = no Roblox voice for that account; dev=0 / nodev = no mic device; mute stays 1 = never unmuted; silent = unmuted but no signal (OS mic permission / broken mic); talk near>80 or far k=alone = distance / different server. Related: [[custom-matchmaking]], [[voice-indicator]].
