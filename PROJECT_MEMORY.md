@@ -2944,3 +2944,15 @@ Built (Studio only, not published, not play-tested):
 - 2026-10-29: C4/D4 moved from i/o to 8/k (user's choice) because Roblox's engine camera zoom swallows i/o — confirmed with real-keyboard logging (no press signal; release only sometimes). Never map i or o in game key layouts.
 - 2026-10-29 (later): user changed it to skip i/o — C4 = p, D4 = [, E4 = ]; final white row q w e r t y u p [ ] z x c v b n m , . /.
 - 2026-10-29 (later): black keys C#4 = -, D#4 = = (were 9 / 0). Full map C3..A#5: q 2 w 3 e r 5 t 6 y 7 u p - [ = ] z s x d c f v b h n j m , l . ; / '.
+
+## mountain-waterfall
+
+2026-10-29 (user sent a photo of a wide jungle waterfall: "ปรับภูเขาให้เป็นน้ำตก" + "ลำธารกว้างขึ้นอีกนิด ซึ่งเป็นน้ำที่ไหลมาจากน้ำตก"; chose: players can walk to the pool, 4 falls, stream ~14). Studio only, not published.
+- Mountain = the north grey mountain behind the terraces (peak ~240). Bowl centre B = (456, 234), opening D = (-0.826, -0.564) toward the hut; bowl radius 46, cliff ring to 58, corridor half-width 32 to along 80, flanks to 52. Floor/water top y 52 (= top of the old stream). Pool = r < 43 from B (depth 4/8/12). Hollow mountain filled with Rock below the old surface in the edited columns.
+- The mountain foot was ~35 studs BELOW the stream top (valley at x 300–400), so a grass ridge was built along polyline (404,199) → (350,165) → (305,142) → (256,140), top y 52, water |d| < 8.5, flanks blend over 18–46; FarmPlot22 soils/levees protected (no edits within 1–3 studs).
+- `workspace.MountainFalls`: Fall1–4 (angles -48/-18/12/40 from the back direction, widths 12/22/18/12) + Trickle1–4; each = Sheet (Transparency 0.55, Texture FlowA/FlowB with Attribute ScrollSpeed, image rbxassetid://138175470560716 made by me in Python and uploaded), Lip (LipFoam), Splash (Splash + WaterfallSound on Fall2/3), PoolMist, Greenery (51 clones of HikingMap JungleTree/TreeFern/BigLeafPlant/Fern). Creator Store decals did NOT render (decal asset id ≠ image id) — use uploaded images.
+- `StarterPlayerScripts.MountainFallsFx` scrolls the textures (FxThrottle). Scroll direction NOT verified in Play (flip the sign if the water runs upward).
+- Stream widened: water copied from z 136/140 cells to 132/144 (now z 132–148), beds' levees touch the water edge by ~2 studs. Cascade parts Z 7.4 → 15.4, their emitter rates x1.8.
+- PlayArea Points: { 320, 250 }, { 372, 240 }, { 425, 234 }, { 446, 205 }, { 448, 160 }, { 470, 100 } (was { 370, 200 }, { 420, 150 }); walls rebuilt. Players reach the south/front half of the pool.
+- Backup `ServerStorage._Backup_20261029_Waterfall`: TerrainBefore (x 120–560, y -12–272, z 60–340; restore `Terrain:PasteRegion(f.TerrainBefore, Vector3int16.new(CornerX, CornerY, CornerZ), true)`), StreamBefore, PlayAreaWallsBefore, PlayAreaModuleBefore, MovedItems (9 HikingMap plants, Attribute OriginalParent). Moved-up/down plants carry Attribute WaterfallMovedY.
+- Not done: Play test (Studio start-play hung), FPS on mobile, sound check, a warp spot / sign (none added).
