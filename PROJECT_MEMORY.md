@@ -1987,6 +1987,12 @@ WELCOMEBETA = 400,000 coins, once per account, 30 days. Added and published 2026
 
 - `LlamaMountPromoCodes` (added 2026-10-19, `RM-XXXXXX`, 10 codes, single-use game-wide): ลามะไม่ใช่ลามะ (MagicLlama mount) via `redeemLlamaPromoCode` → BindableFunction `ServerScriptService.MountPromoGrant` (created in MountSystem.MountGift; "disabled"/"loading"/true/false on check, GrantBatch on grant); claims LlamaMountPromoCodeClaims_v1; already owned or MountConfig disabled = not burned. Compiles; not redeem-tested; needs Publish.
 
+- `PlantQuotaPromoCodes` (added 2026-11-04, `PL-XXXXXX`, 20 codes, single-use game-wide): plant quota +60 (12 × +5) via `redeemPlantQuotaPromoCode` → `PlantQuotaPromoGrant:Invoke(player, ref, times)`; claims PlantQuotaPromoCodeClaims_v1.
+
+- `HatchTokenPromoCodes` (added 2026-11-04, `PK-XXXXXX`, 20 codes, single-use game-wide): 12 instant-hatch coupons via `redeemHatchTokenPromoCode` → `ChickenTokenGrant` ("check" first, so an unloaded farm does not claim the code); claims HatchTokenPromoCodeClaims_v1. Both use `redeemClaimedPromoCode` (Studio claims under `studio_` keys). Flow tested in Play with stubbed grants; real grants not tested; needs Publish.
+
+- `NineTailFoxPromoCodes` (`N9-XXXXXX`) / `ScarecrowGhostPromoCodes` (`GO-XXXXXX`) (added 2026-11-04, 20 codes each, single-use game-wide): one code = one purchase (new → Lv.1, owned → +1 level) via `redeemPremiumPetPromoCode` → `PremiumPetPromoGrant`; maxed or still loading = code not claimed; claims NineTailFoxPromoCodeClaims_v1 / ScarecrowGhostPromoCodeClaims_v1. Flow tested in Play with stubbed grants; real grants not tested; the owner test account is Lv.15 on both pets so cannot test them; needs Publish.
+
 - `WitchMaxPromoCodes` (added 2026-10-15, `MMG-XXXXXX`, 5 codes, single-use game-wide): แม่มดน้อย straight to **Lv.15** (new → Lv.15, owned → set to 15, already 15 = not burned). Same `redeemWitchPromoCode` with params (claims store WitchMaxPromoCodeClaims_v1, action `grantMax` on PremiumPetPromoGrant → `PetOwnership.GrantPremium(..., setLevel)`). Compiles; not redeem-tested; needs Publish.
 
 
@@ -2960,3 +2966,58 @@ Built (Studio only, not published, not play-tested):
 - 2026-10-29 smoothing pass: each fall now = hidden Sheet + Part `Flow` with Attachments Top (on plateau 3 behind the edge) / Lip (7 below edge, 1.6 out) / Low (y 53) and Beams Crest/Drop/Veil (FaceCamera, Wrap, TextureSpeed moves the water, no script needed) + `LipFoamSoft` / `FaceSpray` emitters. Textures: fall rbxassetid://132530861779050, foam rbxassetid://91850571151432 (made with System.Drawing C# in PowerShell — this PC has no Python; uploaded via upload_image from a node http server on 127.0.0.1). Old sheets topped 4–11 studs above the cliff edge — that was the "not smooth" look. Backup `_Backup_20261029_Waterfall.MountainFalls_before_smooth`. Not yet seen in a screenshot.
 - 2026-10-29 water on top: SourcePool (548,258 r12, level 228.6) → stream A → `TopFlow.ShelfDrop` beam → ShelfPond (x502–530 z212–246, level 203.5) feeding Fall2; stream B → StepB → lower stream (222.6) → ToFall3 beam onto Fall3's crest. Terrain backup `_Backup_20261029_Waterfall.TerrainTopBefore` (corner attrs TopCornerX/Y/Z). GOTCHA: set Attachment.Parent BEFORE WorldCFrame — setting WorldCFrame on an unparented attachment stores it as local CFrame (all Flow attachments were misplaced until fixed).
 - 2026-10-29 summit tarn: Terrain Water level 221 inside r 40 of (566, 335) on the mountain top (the basin drains SE, natural spill only 217.5, so a low rim up to 222.6 was added on the open side). Backup `_Backup_20261029_Waterfall.TerrainTarnBefore` (corner attrs TarnCornerX/Y/Z = 500,200,272). Not connected to the falls' SourcePool (that is higher, 228.6).
+
+
+---
+
+## new-crops-carrot-sunflower-chili
+
+Built 2026-11-04 (Studio only, not published): Carrot lv25, Sunflower lv28, Chili lv32. Numbers and the add-a-crop checklist live in `CROPS.md`.
+- Release: `WithOrchard = true` on SHOP_ITEMS, checked in ShopSystem `seasonOpen`, so seeds appear only when `OrchardConfig.Enabled` is true. User wants them to ship with the orchard.
+- Models: AI meshes with explicit parts, texture removed and Color set by hand, because AI textures came out pale. Chili Stage5 keeps its texture (the pepper part came out tiny).
+- `SinkBelowGround` attribute on a stage model pushes it below the bbox-bottom ground snap in PlantingSystem.buildStageModel. Carrot Stage5 = 1.6.
+- A seed put in hotbar slots 1-2 by EquipTool can be planted by pets elsewhere, so a "missing" seed in a test may just be a pet's plant.
+
+## achievement-badges
+
+รายละเอียดทั้งหมดอยู่ใน `ACHIEVEMENTS.md` · DEV_ONLY = true ใช้ใน dev เท่านั้น ผู้ใช้สั่ง 2026-11-04 ยังไม่เอาเข้าจริง
+เหรียญตรา = Roblox Badge จริง (ผู้ใช้ยืนยัน 2026-11-04) · ทดสอบ Play ผ่าน (นับจริง, ข้ามขั้น, จำลองมอบตรา, เพดาน, เซฟคีย์ปลอม) ยังไม่ได้ลองมอบตราจริงและโหลดกลับตอนเข้าใหม่ · MCP สั่ง Play ไม่ติด ให้ผู้ใช้กดเอง แต่ MCP สั่งหยุดได้
+- Config: `ReplicatedStorage.AchievementConfig` (Lines/Tiers, ENABLED, เพดานต่อ 10 นาที) · Service: `ServerScriptService.AchievementService` (DataStore `Achievement_v1` {c, got})
+- จุดนับ: `PlantingSystem.plantCrop`, `FishingSystem.giveCatch` + ปลาจากนาก ไม่นับขยะ
+- Badge ID: ปลูก 10 = 3069906135594246 · 100 = 703410877988170 · 1,000 = 1646496349429969 · ตกปลา 10 = 992621926129590 · 100 = 2564445070643858 (รูปอยู่ `art/badges`)
+- Studio ใช้คีย์ปลอมเสมอ (`DevAchievementKeyOverride` หรือ `StudioTest_<UserId>`) และจำลองการมอบตรา ถ้าจะมอบจริงตั้ง `DevAchievementRealAward = true` · `DevAchievementAdd = "plant:10"` เพิ่มยอดทดสอบ · ดูค่าที่ Attribute `AchCount_<หมวด>` / `AchGot`
+- UI: `StarterPlayerScripts.AchievementGui` เปิดจาก ☰ (event `OpenAchievement`) ขอข้อมูลผ่าน RemoteFunction `AchievementRequest` · Studio: Attribute `DevOpenAchievement` บนผู้เล่นเปิดหน้าต่าง
+- ป๊อปอัปได้ตรา: `AchievementPopupGui` ใน AchievementGui รับ RemoteEvent `AchievementEarned` (ส่ง Badge ID), เสียง 371274037 กลุ่ม EffectSounds
+- ยังไม่ทำ: เติมยอดปลาย้อนหลังจาก `FishIndex_v1`, ตราขั้นสูงกว่านี้, จุดแดงตราใหม่
+- gotcha: execute_luau ที่ใช้ `:sub()` ตัดข้อความไทยกลางตัวอักษรทำให้ Request timeout อย่าตัดสตริงไทยตามไบต์
+
+2026-11-04 QuickShop tabs (PlantLimitGui, Studio only, not published): ⭐ special / 🐾 pets in the header (`Tabs`); cards listed in `PET_TAB_CARDS` go to `PetCardList`, the rest to `CardList`; `activeList` + `setTab`; reopening returns to the first tab; LB/RB switch; tabs hidden if no pet card. Backup `_Backup_20261104.PlantLimitGui_before_pettab`. Tested in Play: switching, llama 🎁 stacking, reopen. Not tested: green active tab colour, Thai text, gamepad, phone.
+
+2026-11-04 Nine-Tailed Fox in the QuickShop pets tab (Studio only, not published, NOT Play-tested yet, compile check only): `PremiumPetConfig.Pets.NineTailFox` ProductId 3728205309 / GiftProductId 3728205419 (the user first typed them swapped; Dashboard names decide), `ShopOnly = true` makes GachaService.premiumInfo return nil so the 💠 tab keeps the shard level-up button. Stays Secret + gacha. Repeat buy = +1 level to Lv.15. Gift: `ServerScriptService.NineTailFoxGift` (copy of PremiumPetGift, own DataStore `NineTailFoxGift_v1`), VipGui kind `fox`, `OpenFoxGift`. Backups `_Backup_20261104.*_before_foxshop`.
+
+2026-11-04 Scarecrow Ghost in the QuickShop pets tab (Studio only, not published): `PremiumPetConfig.Pets.ScarecrowGhost` ProductId 3728208330 / GiftProductId 3728208498, `ShopOnly`; gift `ServerScriptService.ScarecrowGhostGift` (DataStore `ScarecrowGhostGift_v1`), VipGui kind `ghost`, `OpenGhostGift`. PlantLimitGui `SHOP_PETS` table now drives the fox + ghost cards; `FaceSign` = model facing (-1 fox, 1 ghost). Play-tested: cards at Lv.15, ghost 🎁 stacking. Not tested: unowned card state, real purchase/gift.
+
+2026-11-04 Witch broom pack in the QuickShop pets tab (Studio only, not published): `MountConfig.Bundles.WitchBroomBundle` = ProductId 3728218685 / GiftProductId 3728219050, Mounts + Accessories lists, granted together through `MountOwnership.GrantBatch`. Server `MountSystem.MountBundleShop` (buy + gift mailbox, DataStore `MountBundleGift_v1`), VipGui kind `witchbroom`, `OpenBroomGift`, PlantLimitGui `WitchBroomCard`. User chose: owning one piece can still buy for the full price and gets the missing piece; owning both blocks buying and gifting. The items keep their Season, so the gacha still rolls them only during Halloween. Simulated buy tested with fake `DevMountKeyOverride`. Not tested: one-piece state, real gift, real purchase, shortened unowned text.
+
+## Cartoon pines replaced the realistic trees (2026-11-04, Studio only)
+- `ServerStorage.FarmFlora.CartoonPineA` / `CartoonPineB`: one generate_mesh MeshPart `body_geom` (2,992 tris, non-colliding) + invisible `TrunkCollider`; pivot = trunk base. Clone, `ScaleTo`, then `PivotTo` ground.
+- Used by 12 `HikingMap.Forest.PineTree` and 57 `JungleTree` (`HikingMap.Jungle.S1/S2.Canopy` 46, `MountainFalls.Greenery` 11). Names and attr `R` kept, attr `TreeVariant` added. Height = old Trunk height × 0.86–1.0, clamped 24–70.
+- Originals: `ServerStorage._Backup_20261104_PineTrees` / `_Backup_20261104_JungleTrees` (attr `OriginalPath`). Restore = move back and destroy the cartoon clone.
+- Still on the old mesh: `FarmFlora.Trees` FarmTree 16, `Tree_3` 1, Shrubs 131 (leaf only). `ServerStorage.JungleForest` now reads its template from `FarmFlora.FarmTree`, so rerunning it makes realistic trees again.
+- GOTCHA: with `PrimaryPart` set, `Model.WorldPivot` does not stick; the pivot is the PrimaryPart's. Set `PrimaryPart.PivotOffset` instead (first placement sank every tree by half its height).
+- Not checked up close: waterfall-top trees (capture timed out), and one Canopy tree at (418,−707) that used to float at y 59 and now sits on the ground at 14.
+- Same day: the 16 `Workspace.FarmFlora.Trees` FarmTree models also became CartoonPineA/B (name kept; backup `ServerStorage._Backup_20261104_FarmTrees`). Keep the `ServerStorage.FarmFlora.FarmTree` template: JungleForest reads it. In the workspace the old pine trunk is now only on `Tree_3`; old leaves remain on 131 Shrubs.
+- Same day: the single `HikingMap.Jungle.S2.Emergent.EmergentTree` (it had 4 Crown meshes, so counts looked like 4 trees) became CartoonPineA, height 66, backup `ServerStorage._Backup_20261104_EmergentTree`. Total cartoon pines: 86 (75 after the banana swap below).
+- Same day (user screenshot of the waterfall crest, "บนเขาเปลี่ยนเป็นต้นกล้วย"): all 11 `MountainFalls.Greenery` trees are now `BananaTree` clones of `ServerStorage.BananaTree` (6 MeshParts, 5,796 tris, pivot at the base, template height 22.1 at scale 4), height 31–42. They no longer carry `TreeVariant`. Restoring the older look there: originals in `_Backup_20261104_JungleTrees` with OriginalPath = `Workspace.MountainFalls.Greenery`.
+
+---
+
+## coin-ledger
+
+2026-11-04 `ServerScriptService.CoinLedger` บันทึกเงินที่ลดลง สร้างเพราะเกมไม่มีประวัติการใช้เงิน Studio เท่านั้น ยังไม่ Publish ทดสอบด้วยผู้เล่นจำลองใน Edit แล้ว ยังไม่ได้ทดสอบ Play
+
+- อ่าน: DataStore `CoinLedger_v1` คีย์ `u<UserId>` รายการ `{ t, d, left, src, x, z, lv }` ล่าสุด 100 รายการ
+- จุดหักเงินทุกจุดต้องตั้ง `player:SetAttribute("CoinSrc", "<ที่มา>")` ก่อนหัก ถ้าเพิ่มจุดหักเงินใหม่แล้วลืม จะขึ้น `unknown`
+- `src = unknown` คือเงินลดจากทางที่ไม่รู้จัก เช่น `coins.Value += ค่าติดลบ`
+
+เคส Punjarat1 (4227197828) ยังไม่รู้สาเหตุ: 4 พ.ย. 01:00 น. เงินเซฟ 200,000 ตอนเข้า และ 20,000 ตอนออกหลังเล่น 63 วินาที XP 0 กระเป๋ายังครบ ตัดตั๋วสุ่ม ตู้พาหนะ โควต้าปลูก เทรด บริจาค ออเดอร์ คราฟต์ สวน เบ็ด ไก่ออกแล้ว ยังไม่ได้คืนเงิน คำสั่งคืน `/give Punjarat1 coins 180000 <เหตุผล>`

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+	<defs>
+		<linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+			<stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#bcc7d6"/>
+			<stop offset=".55" stop-color="#ffffff"/><stop offset=".8" stop-color="#bcc7d6"/>
+			<stop offset="1" stop-color="#6f7d92"/>
+		</linearGradient>
+		<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fdcff"/><stop offset="1" stop-color="#e6fbff"/></linearGradient>
+		<linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fe3f5"/><stop offset="1" stop-color="#1f8fd6"/></linearGradient>
+		<linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9ec6c"/><stop offset="1" stop-color="#55bf4a"/></linearGradient>
+		<clipPath id="disc"><circle cx="256" cy="256" r="206"/></clipPath>
+		<filter id="sticker" x="-20%" y="-20%" width="140%" height="140%">
+			<feMorphology in="SourceAlpha" operator="dilate" radius="7" result="fat"/>
+			<feFlood flood-color="#ffffff"/><feComposite in2="fat" operator="in" result="edge"/>
+			<feOffset in="fat" dy="7" result="low"/><feFlood flood-color="#00000055"/><feComposite in2="low" operator="in" result="shadow"/>
+			<feMerge><feMergeNode in="shadow"/><feMergeNode in="edge"/><feMergeNode in="SourceGraphic"/></feMerge>
+		</filter>
+	</defs>
+	<rect width="512" height="512" fill="#bcc7d6"/>
+	<circle cx="256" cy="256" r="256" fill="url(#rim)"/>
+	<circle cx="437.4" cy="111.4" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="465.0" cy="155.3" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="482.2" cy="204.4" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="488.0" cy="256.0" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="482.2" cy="307.6" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="465.0" cy="356.7" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="47.0" cy="356.7" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="29.8" cy="307.6" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="24.0" cy="256.0" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="29.8" cy="204.4" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="47.0" cy="155.3" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/><circle cx="74.6" cy="111.4" r="7" fill="#ffffffaa" stroke="#00000033" stroke-width="2"/>
+	<circle cx="256" cy="256" r="212" fill="#6f7d92" stroke="#3b2a20" stroke-width="6"/>
+	<circle cx="256" cy="256" r="206" fill="url(#sky)"/>
+			<g clip-path="url(#disc)">
+				<ellipse cx="170" cy="150" rx="46" ry="20" fill="#fff" opacity=".85"/>
+				<ellipse cx="350" cy="118" rx="36" ry="16" fill="#fff" opacity=".85"/>
+				<path d="M40,320 Q170,250 280,306 T480,290 V480 H40Z" fill="#a8e36f"/>
+				<path d="M40,360 Q200,300 480,350 V480 H40Z" fill="#7fce55"/>
+			</g>
+	<circle cx="256" cy="256" r="206" fill="none" stroke="#ffffff66" stroke-width="5"/>
+	
+	<g filter="url(#sticker)"><path d="M256,330 C256,270 256,210 256,150" fill="none" stroke="#3b2a20" stroke-width="26" stroke-linecap="round"/>
+		<path d="M256,330 C256,270 256,210 256,150" fill="none" stroke="#58c04e" stroke-width="12" stroke-linecap="round"/>
+		<g transform="translate(256 282) rotate(-72)">
+		<path d="M0,0 C54,-28 45.9,-89.60000000000001 0,-112 C-45.9,-89.60000000000001 -54,-28 0,0Z"
+			fill="url(#leaf)" stroke="#3b2a20" stroke-width="8" stroke-linejoin="round"/>
+		<path d="M0,-13.44 L0,-80.64" stroke="#3f9a3c" stroke-width="6" stroke-linecap="round" fill="none"/>
+	</g><g transform="translate(256 282) rotate(72)">
+		<path d="M0,0 C54,-28 45.9,-89.60000000000001 0,-112 C-45.9,-89.60000000000001 -54,-28 0,0Z"
+			fill="url(#leaf)" stroke="#3b2a20" stroke-width="8" stroke-linejoin="round"/>
+		<path d="M0,-13.44 L0,-80.64" stroke="#3f9a3c" stroke-width="6" stroke-linecap="round" fill="none"/>
+	</g>
+		<g transform="translate(256 214) rotate(-56)">
+		<path d="M0,0 C50,-26 42.5,-83.2 0,-104 C-42.5,-83.2 -50,-26 0,0Z"
+			fill="url(#leaf)" stroke="#3b2a20" stroke-width="8" stroke-linejoin="round"/>
+		<path d="M0,-12.48 L0,-74.88" stroke="#3f9a3c" stroke-width="6" stroke-linecap="round" fill="none"/>
+	</g><g transform="translate(256 214) rotate(56)">
+		<path d="M0,0 C50,-26 42.5,-83.2 0,-104 C-42.5,-83.2 -50,-26 0,0Z"
+			fill="url(#leaf)" stroke="#3b2a20" stroke-width="8" stroke-linejoin="round"/>
+		<path d="M0,-12.48 L0,-74.88" stroke="#3f9a3c" stroke-width="6" stroke-linecap="round" fill="none"/>
+	</g>
+		<g transform="translate(256 170) rotate(0)">
+		<path d="M0,0 C46,-23 39.1,-73.60000000000001 0,-92 C-39.1,-73.60000000000001 -46,-23 0,0Z"
+			fill="url(#leaf)" stroke="#3b2a20" stroke-width="8" stroke-linejoin="round"/>
+		<path d="M0,-11.04 L0,-66.24" stroke="#3f9a3c" stroke-width="6" stroke-linecap="round" fill="none"/>
+	</g><path d="M128,348 Q256,276 384,348 Q256,382 128,348Z" fill="#8a5a35" stroke="#3b2a20" stroke-width="9" stroke-linejoin="round"/>
+		<path d="M170,334 Q256,298 330,330" fill="none" stroke="#b07a4c" stroke-width="10" stroke-linecap="round"/></g>
+	
+	<polygon points="221.9,3.5 228.6,18.2 244.7,20.1 232.8,31.1 236.0,47.0 221.9,39.1 207.7,47.0 210.9,31.1 199.0,20.1 215.1,18.2" fill="#fff3a0" stroke="#3b2a20" stroke-width="4" stroke-linejoin="round"/><polygon points="290.1,3.5 296.9,18.2 313.0,20.1 301.1,31.1 304.3,47.0 290.1,39.1 276.0,47.0 279.2,31.1 267.3,20.1 283.4,18.2" fill="#fff3a0" stroke="#3b2a20" stroke-width="4" stroke-linejoin="round"/>
+	<g>
+		<path d="M150,384 L84,384 L104,412 L84,440 L150,440Z" fill="#6f7d92" stroke="#3b2a20" stroke-width="8" stroke-linejoin="round"/>
+		<path d="M362,384 L428,384 L408,412 L428,440 L362,440Z" fill="#6f7d92" stroke="#3b2a20" stroke-width="8" stroke-linejoin="round"/>
+		<rect x="122" y="372" width="268" height="76" rx="20" fill="#7f8ea6" stroke="#3b2a20" stroke-width="8"/>
+		<rect x="134" y="381" width="244" height="16" rx="8" fill="#ffffff44"/>
+		<text x="256" y="434" text-anchor="middle" font-family="'Arial Black','Segoe UI Black',sans-serif" font-size="66" font-weight="900"
+			fill="#fff" stroke="#3b2a20" stroke-width="11" stroke-linejoin="round" paint-order="stroke">100</text>
+	</g>
+</svg>
