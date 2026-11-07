@@ -3030,3 +3030,7 @@ Built 2026-11-04 (Studio only, not published): Carrot lv25, Sunflower lv28, Chil
 - `src = unknown` คือเงินลดจากทางที่ไม่รู้จัก เช่น `coins.Value += ค่าติดลบ`
 
 เคส Punjarat1 (4227197828) ยังไม่รู้สาเหตุ: 4 พ.ย. 01:00 น. เงินเซฟ 200,000 ตอนเข้า และ 20,000 ตอนออกหลังเล่น 63 วินาที XP 0 กระเป๋ายังครบ ตัดตั๋วสุ่ม ตู้พาหนะ โควต้าปลูก เทรด บริจาค ออเดอร์ คราฟต์ สวน เบ็ด ไก่ออกแล้ว ยังไม่ได้คืนเงิน คำสั่งคืน `/give Punjarat1 coins 180000 <เหตุผล>`
+
+## highlight-255-limit (2026-11-07)
+
+Roblox draws at most 255 Highlights per client; disabled ones still take a slot and extras are silently dropped (newest lose). Other players' Backpack tools replicate to every client, so Highlights inside tools count. This hid the glow chicken's `MutAura` on the show stand in full live servers. Fix (published 2026-11-07, user confirmed the show-stand glow chicken has its outline in live): `ToolVisualHelper.AttachAura` now only tags the handle `HeldGlowSource` (+ attrs `HeldGlowA/B`); `CropAura` (client) creates the `HeldGlow` Highlight only while the tool is in a character and destroys it when unequipped. Rule: never leave Highlights on things sitting in backpacks or hidden; prefer creating them client-side on demand.

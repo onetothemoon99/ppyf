@@ -16,6 +16,7 @@ const TIERS = {
 	2: { light: "#ffffff", mid: "#bcc7d6", dark: "#6f7d92", ribbon: "#7f8ea6", stars: 2 }, // เงิน
 	3: { light: "#fff3a8", mid: "#ffc62e", dark: "#b8730a", ribbon: "#e0940f", stars: 3 }, // ทอง
 	4: { light: "#eafdff", mid: "#6fd6f7", dark: "#2377bd", ribbon: "#2a93d6", stars: 4 }, // เพชร
+	5: { light: "#ffe0f4", mid: "#d65cff", dark: "#6b1fa8", ribbon: "#a033d6", stars: 5 }, // ตำนาน (ม่วง)
 	welcome: { light: "#ffe6f0", mid: "#ff94bb", dark: "#c94f86", ribbon: "#ee5f98", stars: 0, hearts: 3 }, // ตราพิเศษ ยินดีต้อนรับ
 };
 
@@ -203,6 +204,56 @@ const ICONS = {
 			<ellipse cx="396" cy="272" rx="15" ry="12" fill="#f4dcc2"/>
 			<circle cx="376" cy="248" r="7" fill="#f4dcc2"/><circle cx="396" cy="240" r="7" fill="#f4dcc2"/><circle cx="416" cy="248" r="7" fill="#f4dcc2"/>
 		</g>`,
+	// ต้นไม้ทองคำ ผลเป็นอัญมณี
+	plant5: () => {
+		const blob = (x, y, r, c) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="${INK}" stroke-width="9"/>`;
+		const gem = (x, y, c) => `<path d="M${x},${y - 20} L${x + 17},${y - 4} L${x},${y + 20} L${x - 17},${y - 4}Z" fill="${c}" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><path d="M${x - 6},${y - 10} L${x},${y - 15} L${x + 3},${y - 6}Z" fill="#fff"/>`;
+		return `<path d="M226,340 C236,290 232,250 226,206 L286,206 C280,250 276,290 286,340Z" fill="#c98a2e" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
+			${blob(164, 206, 62, "#f2a91c")}${blob(348, 206, 62, "#f2a91c")}${blob(204, 134, 66, "#ffc62e")}${blob(310, 134, 66, "#ffc62e")}
+			${blob(256, 192, 88, "url(#gold)")}
+			<ellipse cx="226" cy="150" rx="34" ry="18" fill="#fff6c4"/>
+			${gem(180, 222, "#ff4f7a")}${gem(330, 224, "#4fd6ff")}${gem(256, 244, "#6cf06a")}${gem(292, 146, "#c77dff")}${gem(208, 102, "#ff4f7a")}${soil()}`;
+	},
+	// ถังใส่ปลาล้น
+	fish4: () => `${fish(186, 150, 0.56, -58, { body: "#ff9f43", belly: "#ffe0b0", fin: "#ff6f3c" })}
+		${fish(326, 150, 0.56, -122, { body: "#4db8ff", belly: "#d5f2ff", fin: "#2384e8" })}
+		${fish(256, 128, 0.62, -90, { body: "#ffcc33", belly: "#fff2ad", fin: "#f28c1e" })}
+		<path d="M140,236 H372 L346,368 H166Z" fill="#9a6235" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
+		<path d="M150,282 H362 M158,326 H354" stroke="${INK}" stroke-width="8"/>
+		<path d="M150,282 H362" stroke="#c98a5a" stroke-width="3"/>
+		<rect x="128" y="222" width="256" height="30" rx="14" fill="#c98a5a" stroke="${INK}" stroke-width="10"/>`,
+	// ไข่คริสตัลสวมมงกุฎ
+	egg4: () => `${egg(256, 222, 90, "#bff0ff", "#ffffff")}
+		<path d="M256,140 L296,196 L256,252 L216,196Z" fill="#8edcf7" opacity=".7"/>
+		<path d="M256,140 L296,196 L256,196Z" fill="#ffffff" opacity=".6"/>
+		<path d="M216,196 L256,252 L256,196Z" fill="#5fb8e0" opacity=".5"/>
+		<g transform="translate(256 98)">
+			<path d="M-54,34 L-64,-26 L-28,4 L0,-44 L28,4 L64,-26 L54,34Z" fill="url(#gold)" stroke="${INK}" stroke-width="9" stroke-linejoin="round"/>
+			<circle cx="0" cy="10" r="10" fill="#ff5f8f" stroke="${INK}" stroke-width="5"/>
+		</g>${nest(306)}`,
+	// ถ้วยรางวัลมีดาว
+	level4: () => `<path d="M176,128 C110,128 104,212 186,228" fill="none" stroke="${INK}" stroke-width="30" stroke-linecap="round"/>
+		<path d="M176,128 C110,128 104,212 186,228" fill="none" stroke="#ffc62e" stroke-width="14" stroke-linecap="round"/>
+		<path d="M336,128 C402,128 408,212 326,228" fill="none" stroke="${INK}" stroke-width="30" stroke-linecap="round"/>
+		<path d="M336,128 C402,128 408,212 326,228" fill="none" stroke="#ffc62e" stroke-width="14" stroke-linecap="round"/>
+		<path d="M226,262 H286 L296,318 H216Z" fill="#e0940f" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
+		<rect x="180" y="314" width="152" height="38" rx="12" fill="#b5602a" stroke="${INK}" stroke-width="10"/>
+		<path d="M160,100 H352 C352,214 312,270 256,270 C200,270 160,214 160,100Z" fill="url(#gold)" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
+		<path d="M184,120 C186,180 204,222 226,240" fill="none" stroke="#fff6c4" stroke-width="12" stroke-linecap="round"/>
+		${bigStar(256, 172, 50, "#fff3a0")}`,
+	// พระอาทิตย์กับพระจันทร์ (เล่นทั้งวันทั้งคืน)
+	time3: () => {
+		let rays = "";
+		for (let i = 0; i < 10; i++) {
+			rays += `<path transform="rotate(${i * 36 + 18} 206 220)" d="M196,104 L206,74 L216,104Z" fill="#ffb02e" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/>`;
+		}
+		return `${rays}<circle cx="206" cy="220" r="104" fill="url(#gold)" stroke="${INK}" stroke-width="10"/>
+			<circle cx="172" cy="210" r="11" fill="${INK}"/><circle cx="236" cy="210" r="11" fill="${INK}"/>
+			<path d="M180,246 Q206,268 232,246" fill="none" stroke="${INK}" stroke-width="8" stroke-linecap="round"/>
+			<ellipse cx="160" cy="240" rx="14" ry="8" fill="#ff9db4"/><ellipse cx="252" cy="240" rx="14" ry="8" fill="#ff9db4"/>
+			<path d="M330,170 A92,92 0 1,0 386,326 A72,72 0 1,1 330,170Z" fill="#e8eeff" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
+			<circle cx="328" cy="268" r="9" fill="#c8d2f0"/><circle cx="346" cy="300" r="6" fill="#c8d2f0"/>`;
+	},
 	fish1: () => `${fish(262, 228, 0.82, -6, { body: "#ff9f43", belly: "#ffe0b0", fin: "#ff6f3c" })}`,
 	fish2: () => `${fish(248, 240, 0.92, -8, { body: "#4db8ff", belly: "#d5f2ff", fin: "#2384e8" })}`,
 };
@@ -225,6 +276,11 @@ const EXTRAS = {
 	level2: () => `${sparkle(108, 150, 16)}${sparkle(404, 136, 14)}`,
 	level1: () => `${sparkle(136, 170, 18)}${sparkle(374, 214, 14)}`,
 	egg3: () => `${sparkle(136, 150, 26)}${sparkle(384, 128, 20)}${sparkle(400, 224, 14)}${sparkle(122, 240, 13)}`,
+	egg4: () => `${sparkle(130, 170, 24)}${sparkle(390, 160, 20)}${sparkle(392, 250, 13)}`,
+	plant5: () => `${sparkle(112, 120, 22)}${sparkle(404, 110, 18)}${sparkle(410, 280, 14)}${sparkle(104, 270, 13)}`,
+	fish4: () => `${bubble(118, 150, 16)}${bubble(398, 120, 13)}${bubble(410, 176, 9)}`,
+	level4: () => `${sparkle(112, 180, 22)}${sparkle(404, 260, 16)}${sparkle(116, 300, 12)}`,
+	time3: () => `${sparkle(118, 96, 14, "#fffbe0")}${sparkle(420, 150, 16, "#fffbe0")}${sparkle(404, 330, 11, "#fffbe0")}`,
 };
 
 // ---------- ประกอบเหรียญ ----------
@@ -304,7 +360,7 @@ function rankStars(tier) {
 }
 
 function ribbon(label, t, thai) {
-	const size = thai ? 46 : label.length >= 4 ? 58 : 66;
+	const size = thai ? 46 : label.length >= 7 ? 50 : label.length >= 4 ? 58 : 66;
 	const family = thai ? "'Leelawadee UI','Leelawadee',sans-serif" : FONT;
 	return `<g>
 		<path d="M150,384 L84,384 L104,412 L84,440 L150,440Z" fill="${t.dark}" stroke="${INK}" stroke-width="8" stroke-linejoin="round"/>
@@ -372,6 +428,11 @@ const BADGES = [
 	{ file: "level_3_100", cat: "level", tier: 3, label: "Lv.100", icon: "level3" },
 	{ file: "time_1_10h", cat: "time", tier: 1, label: "10 ชั่วโมง", icon: "time1", thai: true },
 	{ file: "time_2_50h", cat: "time", tier: 2, label: "50 ชั่วโมง", icon: "time2", thai: true },
+	{ file: "plant_5_100K", cat: "plant", tier: 5, label: "100,000", icon: "plant5" },
+	{ file: "fish_4_10K", cat: "fish", tier: 4, label: "10,000", icon: "fish4" },
+	{ file: "egg_4_10K", cat: "egg", tier: 4, label: "10,000", icon: "egg4" },
+	{ file: "level_4_500", cat: "level", tier: 4, label: "Lv.500", icon: "level4" },
+	{ file: "time_3_100h", cat: "time", tier: 3, label: "100 ชั่วโมง", icon: "time3", thai: true },
 	{ file: "welcome", cat: "plant", tier: "welcome", label: "ยินดีต้อนรับ", icon: "welcome", thai: true, art: "welcome_art.webp", artX: 36, artY: 34, artSize: 440 },
 ];
 
@@ -397,6 +458,6 @@ const small = BADGES.map((b) => `<img src="png/${b.file}.png" style="width:100px
 fs.writeFileSync(tmp, `<!doctype html><html><body style="margin:0;padding:28px;background:#e3e5e8;overflow:hidden">
 	<div style="display:flex;flex-wrap:wrap;gap:24px">${big}</div>
 	<div style="display:flex;flex-wrap:wrap;gap:24px;margin-top:28px">${small}</div></body></html>`);
-shot(tmp, path.join(OUT, "preview.png"), 2000, 1270);
+shot(tmp, path.join(OUT, "preview.png"), 2000, 1700);
 fs.unlinkSync(tmp);
 console.log("done", BADGES.length);
