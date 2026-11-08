@@ -3034,3 +3034,37 @@ Built 2026-11-04 (Studio only, not published): Carrot lv25, Sunflower lv28, Chil
 ## highlight-255-limit (2026-11-07)
 
 Roblox draws at most 255 Highlights per client; disabled ones still take a slot and extras are silently dropped (newest lose). Other players' Backpack tools replicate to every client, so Highlights inside tools count. This hid the glow chicken's `MutAura` on the show stand in full live servers. Fix (published 2026-11-07, user confirmed the show-stand glow chicken has its outline in live): `ToolVisualHelper.AttachAura` now only tags the handle `HeldGlowSource` (+ attrs `HeldGlowA/B`); `CropAura` (client) creates the `HeldGlow` Highlight only while the tool is in a character and destroys it when unequipped. Rule: never leave Highlights on things sitting in backpacks or hidden; prefer creating them client-side on demand.
+
+---
+
+## island-layout-picture-2026-11
+
+2026-11-08/09: the island was rebuilt several times to match the user's pictures — ×2, back to 1:1 (v3), reshaped to the drawing (v4), and finally **v5 = laid out from the user's colour picture at ×2** (current). Branch `island-layout-2026-11-08`, Studio only, not published. Details: CHANGELOG.md ("Island v5, step 1–8"); plan + picture→world formula in `ISLAND_BLUEPRINT.md` ("v5").
+
+Orientation: picture top = +X (mountain), picture right = +Z (sea). Picture px → world: X = -680 + (1-(py/1024)^0.8)·1480, Z = -800 + px/1536·1510. Ground y 5 (orchard plateau y 45), canal/sea water y 0, lake/streams/pools y 4. Beach material = Limestone.
+
+Where things are (x, z) in v5:
+- Coast (800,-800)→(800,720)→(607,710)→(448,680)→(322,655)→(103,576)→(-165,507)→(-415,468)→(-680,439)→(-680,-800), noisy bays on left/top/bottom, ~90-wide beach on the sea side. PlayArea line x 840.
+- Spawn plaza ellipse (-25,60) 105×235: seed shop stall ≈(95,35), PlazaFountain (-33,35), SpawnLocation (28,35).
+- Activity plaza (-15,-300) 95×128: gacha/boards/NPCs/ActivityFountain round it; BoxingRing (-32,5,-385) at its south end.
+- Chicken yard circle (205,-410) r 100 (fence r 47), RedBarn (240,-570).
+- Orchard + MangoGardenDecor (560,-520) on the plateau; windmills (690,-280), (590,-650).
+- Mountain (600,11) up to y ~210, MountainFalls pivot (445,4,-3), pool (445,-3) r 35; stream ring round the oval area (265,-24) with dead-end ponds (172,-80), (172,32); oval path road (198,-24)→(66,-20).
+- Lake (290,370) 100×150, stone rim; LakeFence only on the road side (gate (182,370)); LakeGazebo (360,420); lighthouse (448,615). Wishing pond disabled (WishingPondConfig Enabled = false, dock parked).
+- Canal 48 wide from the left coast to the sea by the fishing yard; 3 bridges `FarmBridges.CanalBridge_left/_canalBridge/_down`.
+- Fishing yard (user-moved fence) x -390..-279 z 369..458, shop ≈(-322,400); `LayoutDecor.SeaDocks.MainDock` (user-moved, platform ≈(-401.7,2.7,630)); SmallPier deleted by the user.
+- BeachStage (user-moved) ≈(-235,456) turned ~7.5° on a flat Limestone pad (y 5).
+- Plots: no soil anywhere (31 Soils parked in `ServerStorage._IslandV5_Parked.Soils_v4`); 8 empty fenced areas `IslandDecor.PlotAreas` (A–G + StreamOval), posts every ~14 (780 parts). PlantingSystem runs with 0 plots.
+- Fences: `IslandDecor.ZoneFences` (FishingYard, LakeFence, RoadEdges).
+- FarmFlora 493 items (attr PivotAtV4), Lights 61 lanterns, palms/parasols on the beach, Sailboat (130,665).
+- Krathong templates unchanged: LanternField (70,227), LanternGarden (-31,219), Stall (-112,136).
+- Many props resized to the FishingShop's biggest side 14.7 (undo attrs ScaleFix_Before/PivotFix_Before).
+
+Scripts tied to positions (v5 values): WarpConfig shop (45,5,32.5), fishshop (-315,5,427), chickenfarm (146,6,-445), orchard (560.6,46,-424), canal (-194,5,-337), stream (157,5,50), mistlake (189,7,370), sea (-415,4,663) — the sea warp follows MainDock, update it if the dock moves. FishingSystem lake ellipse (290,370) 103×153; SeaMask rebuilt from the v5 coast; TrashEventConfig CENTER (290,370) 103/153, NPC (158,7.8,298); AmbientCritters bird/butterfly/firefly spots; PlayArea x 840.
+
+Verified in Play 2026-11-09: a real catch in all 4 zones from the warps (canal MudCarp, stream Goldfish, lake KrathongFish/SilverBarb, sea Clownfish/Mackerel); trash event (Studio switch `workspace.DevTrashEvent = true`, `DevTrashSeconds`) puts 40 floaters on the lake water (x 201..382, z 248..504), otter NPC on the grass facing the lake (model front = +Z of its pivot), junk caught in the lake counts; at night all 7 firefly zones emit over water/ground. No script errors.
+
+Backups: `ServerStorage._IslandV5_Parked` (v4 pieces replaced in v5: SeaMask_v4, FishingDocks_v4, Soils_v4, fences, bridges, wishing-pond dock); `_IslandKit_v4_20261108` (v4 island: Terrain, Workspace, Scripts); `_IslandKit_v1_20261108` (1:1); `_IslandKit_x2_20261108` (×2); `_IslandKit_20261108` (original).
+
+**Gotchas:** Terrain water does not replace solid cells — write Air first. The generator `_G.Island` (source: the session scratchpad island5_def.lua, not in the repo) is session-only; `I.roadD` paints from `I.roadList`, rebuild it after editing `I.roads`. A FillBlock pad asked for top y 3 reads back near y 5 (voxel smoothing). Fence parts have CanQuery = false. Lantern pivot is at the base, arm along local -Z. LakeLife ducks swim round attr `SwimCenter`. In MCP Play, two execute_luau calls (Server + Client) run one after the other, not side by side — drive multi-step tests one call at a time.
+**Still open:** new plots (none yet — nothing can be planted), phone FPS, gacha/board/prompt behaviour at the new prop sizes, chicken egg pickup, Halloween2026 decor positions, publish.
