@@ -17,6 +17,7 @@ const TIERS = {
 	3: { light: "#fff3a8", mid: "#ffc62e", dark: "#b8730a", ribbon: "#e0940f", stars: 3 }, // ทอง
 	4: { light: "#eafdff", mid: "#6fd6f7", dark: "#2377bd", ribbon: "#2a93d6", stars: 4 }, // เพชร
 	5: { light: "#ffe0f4", mid: "#d65cff", dark: "#6b1fa8", ribbon: "#a033d6", stars: 5 }, // ตำนาน (ม่วง)
+	6: { light: "#ffe6e6", mid: "#ff5a6e", dark: "#9c1030", ribbon: "#d92b45", stars: 6 }, // ทับทิม (สูงสุด)
 	welcome: { light: "#ffe6f0", mid: "#ff94bb", dark: "#c94f86", ribbon: "#ee5f98", stars: 0, hearts: 3 }, // ตราพิเศษ ยินดีต้อนรับ
 };
 
@@ -254,6 +255,57 @@ const ICONS = {
 			<path d="M330,170 A92,92 0 1,0 386,326 A72,72 0 1,1 330,170Z" fill="#e8eeff" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
 			<circle cx="328" cy="268" r="9" fill="#c8d2f0"/><circle cx="346" cy="300" r="6" fill="#c8d2f0"/>`;
 	},
+	// ลูกโลกสีเขียวมีต้นกล้ายักษ์
+	plant6: () => `${stem("M256,150 C256,120 256,100 256,70")}
+		${leaf(256, 96, 110, 56, -60)}${leaf(256, 96, 110, 56, 60)}
+		<circle cx="256" cy="240" r="110" fill="#4db8ff" stroke="${INK}" stroke-width="10"/>
+		<g clip-path="url(#globe)">
+			<path d="M150,190 C180,160 230,170 240,200 C250,230 210,250 200,280 C190,310 150,300 140,270Z" fill="#6fd05a" stroke="${INK}" stroke-width="7" stroke-linejoin="round"/>
+			<path d="M270,150 C320,140 360,180 352,220 C340,250 300,240 290,270 C282,300 300,330 270,345 C250,320 262,280 248,250 C236,220 250,170 270,150Z" fill="#7fdc62" stroke="${INK}" stroke-width="7" stroke-linejoin="round"/>
+		</g>
+		<ellipse cx="212" cy="188" rx="30" ry="16" fill="#ffffff66" transform="rotate(-30 212 188)"/>`,
+	// วาฬพ่นน้ำ
+	fish5: () => `<path d="M256,150 C246,112 222,96 204,104 M256,150 C266,112 290,96 308,104 M256,150 V96" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+		<circle cx="204" cy="104" r="12" fill="#bff0ff"/><circle cx="308" cy="104" r="12" fill="#bff0ff"/><circle cx="256" cy="90" r="13" fill="#bff0ff"/>
+		<path d="M374,236 L432,188 Q424,240 440,282Z" fill="#5a6fd6" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
+		<path d="M110,250 C110,180 180,150 256,150 C330,150 390,190 390,250 C390,310 330,334 250,334 C170,334 110,310 110,250Z" fill="#6f86f0" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
+		<path d="M122,272 C150,320 340,326 380,276 C330,300 180,302 122,272Z" fill="#dfe6ff" stroke="${INK}" stroke-width="7" stroke-linejoin="round"/>
+		<path d="M220,286 Q250,320 284,290" fill="#5a6fd6" stroke="${INK}" stroke-width="8" stroke-linejoin="round"/>
+		<circle cx="168" cy="226" r="16" fill="#fff" stroke="${INK}" stroke-width="7"/><circle cx="164" cy="228" r="8" fill="${INK}"/>
+		<path d="M128,262 Q146,272 162,262" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>
+		<ellipse cx="146" cy="250" rx="12" ry="7" fill="#ff9db4"/>`,
+	// กองไข่ทองสวมมงกุฎ
+	egg5: () => `${egg(150, 268, 42, "url(#gold)", "#fffbe0", -22)}${egg(362, 268, 42, "url(#gold)", "#fffbe0", 22)}
+		${egg(196, 240, 46, "#fff6e6", "#ffffffcc", -10)}${egg(316, 240, 46, "#fff6e6", "#ffffffcc", 10)}
+		${egg(256, 206, 56, "url(#gold)", "#fffbe0")}
+		<g transform="translate(256 98)">
+			<path d="M-54,34 L-64,-26 L-28,4 L0,-44 L28,4 L64,-26 L54,34Z" fill="url(#gold)" stroke="${INK}" stroke-width="9" stroke-linejoin="round"/>
+			<circle cx="0" cy="10" r="10" fill="#ff5f8f" stroke="${INK}" stroke-width="5"/>
+		</g>${nest(306)}`,
+	// มงกุฎใหญ่ในช่อมะกอก
+	level5: () => {
+		let laurel = "";
+		for (let i = 0; i < 6; i++) {
+			const y = 300 - i * 30;
+			const x = 150 - Math.sin(i * 0.55) * 30;
+			laurel += leaf(x, y, 54, 26, -40 - i * 6, "#6fd05a") + leaf(512 - x, y, 54, 26, 40 + i * 6, "#6fd05a");
+		}
+		return `<path d="M168,320 C110,280 104,200 140,140 M344,320 C402,280 408,200 372,140" fill="none" stroke="${INK}" stroke-width="10" stroke-linecap="round"/>
+			${laurel}
+			<path d="M172,290 L150,150 L210,206 L256,120 L302,206 L362,150 L340,290Z" fill="url(#gold)" stroke="${INK}" stroke-width="11" stroke-linejoin="round"/>
+			<rect x="164" y="282" width="184" height="36" rx="10" fill="#e0940f" stroke="${INK}" stroke-width="10"/>
+			<circle cx="150" cy="150" r="14" fill="#fff3a0" stroke="${INK}" stroke-width="7"/><circle cx="362" cy="150" r="14" fill="#fff3a0" stroke="${INK}" stroke-width="7"/>
+			<circle cx="256" cy="116" r="16" fill="#fff3a0" stroke="${INK}" stroke-width="7"/>
+			<path d="M256,206 L282,240 L256,274 L230,240Z" fill="#ff4f7a" stroke="${INK}" stroke-width="8" stroke-linejoin="round"/>
+			<circle cx="200" cy="300" r="9" fill="#4fd6ff" stroke="${INK}" stroke-width="5"/><circle cx="312" cy="300" r="9" fill="#4fd6ff" stroke="${INK}" stroke-width="5"/>`;
+	},
+	// บ้านฟาร์มมีหัวใจ
+	time4: () => `<path d="M150,214 L256,120 L362,214" fill="none" stroke="${INK}" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+		<path d="M174,206 H338 V340 H174Z" fill="#ff7a6b" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
+		<path d="M150,214 L256,120 L362,214" fill="none" stroke="#b5602a" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+		<path d="M226,340 V282 Q256,262 286,282 V340Z" fill="#fff8ea" stroke="${INK}" stroke-width="9" stroke-linejoin="round"/>
+		<path d="M226,282 L286,340 M286,282 L226,340" stroke="#e0b07a" stroke-width="6"/>
+		${heart(256, 214, 34, "#ff5f8f")}`,
 	fish1: () => `${fish(262, 228, 0.82, -6, { body: "#ff9f43", belly: "#ffe0b0", fin: "#ff6f3c" })}`,
 	fish2: () => `${fish(248, 240, 0.92, -8, { body: "#4db8ff", belly: "#d5f2ff", fin: "#2384e8" })}`,
 };
@@ -281,6 +333,11 @@ const EXTRAS = {
 	fish4: () => `${bubble(118, 150, 16)}${bubble(398, 120, 13)}${bubble(410, 176, 9)}`,
 	level4: () => `${sparkle(112, 180, 22)}${sparkle(404, 260, 16)}${sparkle(116, 300, 12)}`,
 	time3: () => `${sparkle(118, 96, 14, "#fffbe0")}${sparkle(420, 150, 16, "#fffbe0")}${sparkle(404, 330, 11, "#fffbe0")}`,
+	plant6: () => `${sparkle(112, 140, 22)}${sparkle(404, 120, 18)}${sparkle(412, 300, 14)}${sparkle(100, 300, 13)}`,
+	fish5: () => `${bubble(120, 150, 15)}${bubble(400, 130, 12)}${sparkle(410, 330, 14)}`,
+	egg5: () => `${sparkle(126, 160, 24)}${sparkle(392, 150, 20)}${sparkle(404, 240, 13)}${sparkle(110, 240, 12)}`,
+	level5: () => `${sparkle(106, 110, 18)}${sparkle(410, 104, 16)}`,
+	time4: () => `${heart(140, 140, 16, "#ff9db4")}${heart(380, 136, 14, "#ff9db4")}${sparkle(410, 270, 13, "#fffbe0")}`,
 };
 
 // ---------- ประกอบเหรียญ ----------
@@ -360,7 +417,7 @@ function rankStars(tier) {
 }
 
 function ribbon(label, t, thai) {
-	const size = thai ? 46 : label.length >= 7 ? 50 : label.length >= 4 ? 58 : 66;
+	const size = thai ? 46 : label.length >= 9 ? 40 : label.length >= 7 ? 50 : label.length >= 4 ? 58 : 66;
 	const family = thai ? "'Leelawadee UI','Leelawadee',sans-serif" : FONT;
 	return `<g>
 		<path d="M150,384 L84,384 L104,412 L84,440 L150,440Z" fill="${t.dark}" stroke="${INK}" stroke-width="8" stroke-linejoin="round"/>
@@ -390,6 +447,7 @@ function badgeSvg(b) {
 		<linearGradient id="up" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6f56a"/><stop offset="1" stop-color="#3fbf5a"/></linearGradient>
 		<linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9ec6c"/><stop offset="1" stop-color="#55bf4a"/></linearGradient>
 		<clipPath id="disc"><circle cx="256" cy="256" r="206"/></clipPath>
+		<clipPath id="globe"><circle cx="256" cy="240" r="105"/></clipPath>
 		<filter id="sticker" x="-20%" y="-20%" width="140%" height="140%">
 			<feMorphology in="SourceAlpha" operator="dilate" radius="7" result="fat"/>
 			<feFlood flood-color="#ffffff"/><feComposite in2="fat" operator="in" result="edge"/>
@@ -433,6 +491,11 @@ const BADGES = [
 	{ file: "egg_4_10K", cat: "egg", tier: 4, label: "10,000", icon: "egg4" },
 	{ file: "level_4_500", cat: "level", tier: 4, label: "Lv.500", icon: "level4" },
 	{ file: "time_3_100h", cat: "time", tier: 3, label: "100 ชั่วโมง", icon: "time3", thai: true },
+	{ file: "plant_6_1M", cat: "plant", tier: 6, label: "1,000,000", icon: "plant6" },
+	{ file: "fish_5_100K", cat: "fish", tier: 5, label: "100,000", icon: "fish5" },
+	{ file: "egg_5_100K", cat: "egg", tier: 5, label: "100,000", icon: "egg5" },
+	{ file: "level_5_1000", cat: "level", tier: 5, label: "Lv.1000", icon: "level5" },
+	{ file: "time_4_500h", cat: "time", tier: 4, label: "500 ชั่วโมง", icon: "time4", thai: true },
 	{ file: "welcome", cat: "plant", tier: "welcome", label: "ยินดีต้อนรับ", icon: "welcome", thai: true, art: "welcome_art.webp", artX: 36, artY: 34, artSize: 440 },
 ];
 
