@@ -3403,3 +3403,230 @@
     - Walking out of the activity plaza east side stops at x 79.8.
     - Walking through the south link gap passes.
     - The only pass on the west side was inside the west path gap, as intended.
+- 2026-11-10 — Plaza brick recoloured to the user's salmon-pink brick picture, and the shop plaza floor rebuilt. Studio only, not published.
+  - The user's screenshot showed grey ground. `LayoutDecor.ShopPlazaFloor` was missing from the open place: the Studio session had changed, and the union was probably never saved. The terrain Ground underneath showed through. The decor, fences and blockers were still there.
+  - Rebuilt it from `ServerStorage._Backup_20261110_PlazaRect.ShopPlazaFloor_parts`: the 7 pieces, unioned again (GeometryService:UnionAsync, Centre as the axis-aligned main) → `ShopPlazaFloor.Floor`, 190 × 395, top y 5.15, PreciseConvexDecomposition, attr KeepVisible.
+  - Colour (228, 138, 122) (was 168, 86, 70) on both `ShopPlazaFloor.Floor` and `ActivityPlazaFloor.Floor`, UsePartColor on.
+  - Checked in an Edit screenshot. Save the place in Studio, or the floor can be lost again.
+- 2026-11-10 — Road from the shop plaza's north gate to the beach tidied (user: "ปรับถนนไปยังหาดให้เรียบร้อย"). Studio only, not published.
+  - Before:
+    - an 8-wide Sand strip from the fence gap to z 284, then a grass break
+    - then a ~30-wide diagonal WoodPlanks boardwalk to the beach. WoodPlanks terrain sits on whole 4-stud cells like Brick, so it was 1 stud below the grass (y 4).
+  - Now: one Sand road 14 wide, flat at y 5 (normal profile), with no grass break.
+    - Centreline (-31.8, 249) → (-33, 300) → (-84, 446) → (-92, 480): from the gap between the two north lamps to the beach.
+    - On the shore (z > 452) only the material changed, so the beach slope is kept.
+  - The rest of the old boardwalk, plus 18 leftover Limestone spots, became Grass.
+  - Terrain backup `ServerStorage._Backup_20261110_BeachRoad.TerrainBefore` (PasteCorner cells (-32, -3, 60), x -128..12, z 240..488).
+  - Checked in an Edit screenshot.
+- 2026-11-10 — Beach colour made even (user: "ปรับสีหาดให้เรียบร้อย"). The white patches were terrain Salt (pure white) in the middle of the Limestone (cream) beach, x -150..120, z 430..580. All 1,894 Salt voxels in x -168..136, z 416..592 changed to Limestone with the same occupancy, so the shape and height are unchanged. Terrain backup `ServerStorage._Backup_20261110_BeachColour.TerrainBefore` (PasteCorner cells (-42, -5, 104)). Checked in an Edit screenshot: the beach is one cream colour. Studio only, not published.
+- 2026-11-10 — Mango orchard: floating objects put on the ground (user: "บางอย่างลอยจากพื้น"). Studio only, not published.
+  - Every model in `Orchard.Decor` and `MangoGardenDecor` was measured: lowest visible part vs terrain under its footprint (plateau y 45). 18 were lowered so their bottom sits on the ground. Each moved model has attr `PivotBeforeGroundFix`.
+    - 5 MangoTree at the back row −3.23, 4 WildflowerPatch −2.3..−3.3, 3 HibiscusBush −2.1 (plants set 0.2 into the soil)
+    - OrchardSign arch −2.30, Lantern −2.61, FruitShop −1.53, MangoCrate −1.20, WantedBoard −0.40, FertilizerMachine −0.43
+  - 183 fence posts (`Orchard.Decor.Fence.Post`) stretched downward to reach 0.3 into the ground (largest gap 1.52). Rails and caps did not move.
+  - Prompts are still inside FruitShop / FertilizerMachine / HelpShop, so they moved with them.
+  - Re-check: nothing in the two folders is more than 0.3 above the ground; no post floats. Edit screenshot of the gate area looks right.
+  - Backup `ServerStorage._Backup_20261110_OrchardGround2` (Decor + MangoGardenDecor before).
+  - Not tested in Play: prompts at the lowered shops.
+- 2026-11-10 — Mango trees ring the fruit-tree orchard (user: "เพิ่มมะม่วงล้อมรอบ"). Studio only, not published.
+  - New folder `MangoGardenDecor.RingTrees`: 26 clones of the existing MangoTree (×0.85–1.06 of its scale, random turn), bottom 0.2 into the plateau ground (y 45).
+  - Placed on two rings 8 and 14 studs outside `Orchard.Decor.Fence` (x 468..654, z -624..-442), every 15 studs.
+  - Spots kept out:
+    - the front gate (x 530..592) and the west side gap (z -560..-516)
+    - anything within 9–14 studs of an existing tree / prop / windmill pivot
+    - any spot that is not flat grass at y 45 (no paths)
+  - Checked in an overhead Edit screenshot: mango trees on all four sides, gate open. Delete the folder to undo.
+- 2026-11-10 — Loy Krathong plot skin works again on the v5 island (user asked whether the plot skin still exists). Studio only, not published.
+  - Found: `SeasonConfig.KrathongFloat2026.Plots` (pink rails, gold posts, cream signs, lotus PostTopper) was still set. But `ServerScriptService.SeasonalDecor.applyPlots` only looked for `FarmDressing.RaisedBeds`, `IslandDecor.PlotFences` and `IslandDecor.PlotNumbers`, and none of them exist after the island rebuild, so the skin did nothing.
+  - Added to `applyPlots`: fences in `workspace.IslandDecor.PlotAreas.<Area>` (direct Post / Rail / GatePost Parts).
+    - Rail → BeamColor, Post + GatePost → PostColor, through the same `setProp` undo, so colours return when the season ends.
+    - Topper on the 4 corner posts (farthest post in each quadrant from the area's post centre) and on both gate posts, facing out.
+    - The old targets are kept in the code.
+  - Backup `ServerStorage._Backup_20261110.SeasonalDecor_before_plotareas` (disabled).
+  - Play test with DevForceSeason incl. KrathongFloat2026:
+    - Area rails (245, 160, 190) and posts / gate posts (225, 180, 80).
+    - 54 lotus toppers (9 areas × 4 corners + 2 gates).
+    - Lantern heads present.
+    - No SeasonalDecor errors.
+  - Not tested: colours returning at season end.
+- 2026-11-11 — Shop plaza halved, and first pass of the wide stream from the user's picture. Studio only, not published.
+  - Backup first: `ServerStorage._Backup_20261111_PlazaStream`
+    - `Terrain`: 9 TerrainRegion tiles x -200..479, y -40..71, z -200..319, attr PasteCorner in cells
+    - `Models`: shop floor, shop decor, PlazaFountain, LanternGarden, Krathong Stall, PetFoodMachine, Corgi, TrashEventSign, ZoneSigns, plaza lanterns, attrs OriginalPath/OriginalPivot
+    - `WarpConfig_before`
+    - parked items in `ParkedLanterns` / `ParkedFromStream`
+  - Shop plaza is now x -115..75, z -145..55 (190 × 200, corner r 20). New unioned brick floor `LayoutDecor.ShopPlazaFloor.Floor` (228, 138, 122). The removed north half is Grass again.
+  - Moved inside (each has attr PivotBeforeHalf):
+    - PlazaFountain → (-20, -55), with its 6 old benches and the fountain group
+    - KrathongDecor.LanternGarden → centre (-75, 15), all 240 hook `HangAt` attrs shifted
+    - KrathongDecor.Stall → (-100, -70)
+    - PetFoodMachine → (58, 5), Corgi → (55, -14)
+    - TrashEventSign → (-100, -125)
+    - ShopCatNpc (it had wandered to (99, 72)) → (50, 44)
+    - 5 lanterns on the removed half parked.
+  - New Sand road links, 14 wide:
+    - north gate (-31.8, 54) → (-31.8, 252), joining the beach road
+    - old west road (-122, 72) → the north road
+    - old east road (78, 186) → a NE gate at (40, 54)
+  - ShopPlazaDecor rebuilt for the small plaza:
+    - 75 fence panels, ×1.4 height, each with a Blocker
+    - gaps at the 4 roads, 6 lamps, 1 corner tree, 37 flower beds, 5 market props
+  - Stream (first pass):
+    - The right branch was widened to 32–40 studs and extended from the old pond down to (50, 146), past the NE road.
+    - Water: Air was written first, then Water, because water does not replace solid cells. The water surface is y 4 (FishingSystem counts surface > 2 as "stream"). Sand bed at -4, 5-stud sand banks. Leftover old water outside the channel (z > 0) was filled with grass.
+    - Stream warp moved to the bank (159, 5, 72).
+  - New kits (headless Blender):
+    - `art/stream/build_stream_kit.py` → asset 96615344810264 → `ServerStorage.StreamKit`: BridgePath, BridgeRoad, Weir, RiverRock S/M/L/Cluster, SteppingStone, LilyPads, Lotus, FernClump, Reeds
+    - `art/stream/build_stream_water.py` → asset 119885930730185: the turquoise see-through water sheet `LayoutDecor.StreamDecor.WaterSheet` (3 MeshParts, y 4.33–4.37, no collide/query/shadow). Only the stream changes colour; terrain WaterColor is untouched.
+  - `LayoutDecor.StreamDecor`: 2 bridges (road crossing + mid path), 2 weirs with splash + sound, 5 stepping stones, ~70 river rocks (×1.7–2.6, darker grey), ~90 bank plants, 21 lily/lotus.
+  - Play: both bridges can be walked across; the spawn stands on the brick floor; rocks on the stream warp spot were cleared.
+  - Superseded the same day: the user asked for an even wider stream that runs straight from the waterfall.
+- 2026-11-11 — Stream round 2: wider and running straight out of the waterfall pool, as in the user's picture. Studio only, not published.
+  - Backup `ServerStorage._Backup_20261111_Stream2`:
+    - 4 terrain tiles (x 0..419, z -40..243, PasteCorner cells)
+    - the round-1 StreamDecor and StreamKit_v1
+    - WarpConfig before
+    - `ParkedFromStream2` (10 trees that stood in the new channel)
+  - Terrain:
+    - New centreline (404,38) → (362,76) → (324,106) → (286,124) → (248,130) → (210,128) → (170,124) → (130,128) → (98,136) → end pool (76,142) r 25.
+    - Half width 35 at the pool narrowing to 25, so 50–70 wide. Water width = half − 5; the rest is a sloped sand bank.
+    - Water was written in two passes (Air, then Water); surface y 4, sand bed y -4.
+    - Clear of the oval plot fence, the lake surround and the shop plaza (checked: nothing within 4 studs).
+    - The round-1 channel outside the new one was filled back with grass. The narrow left ring round the oval plot is kept.
+  - Kit v2: `art/stream/build_stream_kit.py` → asset 77193434360602 → `ServerStorage.StreamKit`.
+    - Bridges are 72 long (BridgePath 10 wide, rise 5; BridgeRoad 15 wide). The Weir is 56 long. New RiverRockXL.
+    - Collision is Hull on wood/stone.
+  - Water sheet v2: `art/stream/build_stream_water.py` → asset 84770472264101. It now also covers the waterfall pool (pool edge measured every 5°), so the turquoise runs from under the falls.
+    - Stream ribbon in Edge/Light/Mid bands, y 4.33–4.37; pool cover at 4.29–4.31.
+    - Translucent, no collide/query/shadow. Terrain WaterColor untouched.
+  - `LayoutDecor.StreamDecor` (641 parts):
+    - BridgeRoad over the end pool along the NE road; BridgePath at (≈334, 98) between the two weirs.
+    - Weirs at ≈(374,66) and (292,121), each with splash + water sound.
+    - 9 stepping stones at ≈(214,128).
+    - 43 grey river rocks (×1.3–2.2, incl. XL), ~120 bank plants (flower bushes, ferns, reeds), 31 lily pads / lotus.
+  - Stream warp moved to the bank (200, 5, 92), facing the water; 7 decor pieces cleared there.
+  - Play-tested:
+    - Walked across both bridges end to end.
+    - The warp spot stands on grass.
+    - Water 12 studs ahead has surface y 4, which FishingSystem counts as "stream".
+    - No new script errors (only the usual start-up infinite-yield warnings).
+  - Not tested: an actual catch, phone FPS.
+- 2026-11-11 — The narrow left stream channel round the oval plot is now turquoise like the main stream (user: "แก้สีน้ำลำธารฝั่งนี้ด้วยเป็นสีเดียวกัน").
+  - Measured its water every 6 studs. New script `art/stream/build_ring_water.py` (same banded ribbon as `build_stream_water.py`; centreline (384,-38) → … → (158,-81), half width 8–19, end pool r 13, 0.8 inset).
+  - Uploaded once as asset 74185084176871. Three MeshParts `RingWater_Water_Edge/Light/Mid` were added to `LayoutDecor.StreamDecor.WaterSheet` at y 4.32–4.36: translucent, no collide/query/shadow. The terrain water underneath is unchanged.
+  - Checked in an Edit screenshot; the mesh took a few seconds to load. Studio only, not published.
+- 2026-11-11 — Stream round 3: extended down to the beach road, with the road bridge moved there (user's red mark: "ลำธารยาวลงมาถึงสะพาน"). Studio only, not published.
+  - Backup `ServerStorage._Backup_20261111_Stream3`: terrain x -80..111, z 40..259 (`TerrainBefore`, PasteCorner cells (-20,-10,10)), StreamDecor, the shop plaza Fence, WarpConfig.
+  - Terrain:
+    - Centreline continued (98,136) → (60,142) → (25,150) → (-8,144) → (-35,138) → end pool (-56,136) r 24, half width 25, in a gentle S.
+    - Same Air → Water write (y 4) with sand banks.
+    - Old round-2 end pool outside the line refilled with grass.
+  - `StreamDecor.Bridges.BridgeRoad` moved onto the beach road (x -35) at (-35, 5, 138), spanning along Z; attr PivotBeforeStream3.
+  - Roads:
+    - The NE plaza connector (40,54) → (58,120) → (78,186) was crossed by the stream and painted back to grass.
+    - New 14-wide Sand link along the north bank (84,188) → (40,192) → (-30,192) joins the east road to the beach road.
+    - The plaza's NE gate was closed: 3 Fence8 panels ×1.4 with Blockers; the 2 gate lamps removed.
+  - Water sheet v3 (`art/stream/build_stream_water.py`, new PTS/HW) → asset 71266232916099. The 3 `StreamWater_*` parts were replaced; the pool cover and the left-channel sheet were kept.
+  - Decor on the extension: 32 bank rocks, 67 bank plants, 9 lily/lotus, 4 XL boulders mid-stream. 13 decor pieces left in the old pool area were removed.
+  - Play-tested:
+    - Walking from the north plaza gate over the new bridge to z 197 works.
+    - The east road → north-bank link reaches the beach road.
+    - The closed NE gate stops the player at z 55.6.
+    - The stream warp still stands on grass.
+- 2026-11-11 — Stream round 4: moved onto the user's blue guide lines, road bridge moved to the red mark, flowing-water effects on the two weirs. Studio only, not published.
+  - Backup `ServerStorage._Backup_20261111_Stream4`: 3 terrain tiles x -80..319, z 40..211; StreamDecor; WarpConfig.
+  - Terrain:
+    - Below the upper bridge the stream now runs nearly straight down past the oval plot and the plaza edge: (290,120) → (250,118) → (210,114) → (170,108) → (130,104) → (95,100) → (60,96) → (25,94) → (-5,93) → (-35,92) → end pool (-58,92) r 25, half width 30 → 26. The upper part (pool, weirs, upper bridge) is unchanged.
+    - Same Air → Water write (y 4) with sand banks.
+    - The round-3 channel outside the line was refilled: grass, or sand where the beach road and the north-bank link cross it.
+    - Nearest plot fence / plaza decor is more than 3 studs from the banks.
+  - `Bridges.BridgeRoad` turned to span along Z and set on the beach road at x -35, z 59..133 (red mark). Its south end meets the plaza's north gate.
+  - Stream warp → (200, 5, 144) on the north bank, facing the water; 6 decor pieces cleared there.
+  - Water sheet v4 → asset 71266232916099 replaced by 92848960880373 (new PTS/HW in `build_stream_water.py`). Pool cover and left-channel sheet kept.
+  - Decor below x 300 re-laid along the new banks: 67 rocks, 123 plants, 13 lily/lotus, 4 XL boulders mid-stream, 9 stepping stones at (185, 111).
+  - Weir effects (both weirs scaled ×1.3, crest at y 6.8; attr FxThrottle):
+    - 20 FaceCamera Beams per weir, from the crest down to the water, flow texture 132530861779050 moving at 1.4, white → pale blue
+    - `FoamLine` ParticleEmitter along the landing
+    - `Ripples` flat foam rings (VelocityPerpendicular, texture 91850571151432) spreading below
+    - looped `WeirSound` (60–80 studs)
+  - `StreamDecor.SurfaceFlow`: 28 flat Beams along the stream centre (attachment axis up) with the slow-moving flow texture, transparency 0.78, so the turquoise surface shows streaks.
+  - Gotcha: FaceCamera = false beams lie in the plane of the attachment's secondary axis; for the weirs they showed edge-on, so FaceCamera = true is used there.
+  - Play-tested:
+    - From the plaza north gate over the new bridge to z 159.
+    - The north-bank link road is walkable.
+    - Water 14 studs ahead of the warp is stream water at y 4. The warp first stood on a rock, which was removed afterwards.
+- 2026-11-11 — Removed the white line down the middle of the stream (user screenshot: "ไม่เอาเส้นขาวตรงกลางลำธาร").
+  - Cause: the line was `LayoutDecor.StreamDecor.SurfaceFlow`. Its flat flow beams render edge-on as a thin white streak.
+  - Fix: the whole part was moved to `ServerStorage._Backup_20261111_Stream4.SurfaceFlow_removed`. The weir effects and the turquoise water sheet are unchanged.
+  - I stopped the user's running Play session to make this edit in Edit mode.
+  - Checked in an Edit screenshot. Studio only, not published.
+- 2026-11-11 — Recoloured the waterfall pool's west wedge to the stream turquoise (user screenshot: "ปรับสีน้ำให้เข้ากับตรีม ลำธาร").
+  - Cause: the turquoise sheets did not cover terrain water at about x 350–395, z −50…46 (between the pool sheet and the waterfall rocks), so plain terrain water colour showed there.
+  - Fix: new `LayoutDecor.StreamDecor.WaterSheet.PoolGapFill`. It holds 156 thin anchored SmoothPlastic strips (2-stud rows, sized to the uncovered cells only) in three layers that match the stream sheets: colour (64,196,214), y 4.31 / 4.29 / 4.27, transparency 0.18 / 0.35 / 0.25. No collide, no query and no touch, so swimming and fishing still use the terrain water.
+  - Checked in an Edit screenshot. Studio only, not published.
+- 2026-11-11 — Redid the waterfall-pool recolour as one smooth sheet (user: "ปรับให้อีกทีตอนนี้ไม่เนียนเลย"). The strip patch had stair-step edges and showed a pale ring.
+  - New script `art/stream/build_pool_water.py`: pool cover v2. The west side (150–210° from (425, −5)) was re-measured to the terrain water line, 1.5 studs inside. v1 stopped at x ≈ 381 (at the rocks), which caused the notch. Both layers now use the stream turquoise (64,196,214).
+  - Uploaded as asset 80954398989786 (`PoolWater.glb`). It replaced `StreamDecor.WaterSheet.PoolWater_Water_Mid` (centre 414.4, 4.31, −5.52, transparency 0.18) and `PoolWater_Water_Light` (centre 411.75, 4.29, −5.65, transparency 0.25). Both have CanQuery, CanTouch and CastShadow off.
+  - The old pool sheets and the `PoolGapFill` strips were moved to `ServerStorage._Backup_20261111_PoolWater`.
+  - Checked in an overhead Edit screenshot; close-up captures timed out. Studio only, not published.
+- 2026-11-11 — Stood the 6 beach parasols upright (user: "ปรับให้ Parasol ตอนนี้มันวางระเนระนาด").
+  - Location: `workspace.LayoutDecor.Parasol` ×6 at (200,590), (150,572), (96,552), (−6,526), (−58,508) and (−108,506).
+  - Cause: the parts are built along the model's X axis, but the pivots had lost the 90° Z tilt (the old `PivotAt…` attributes still have it), so each parasol lay on its side.
+  - Fix: each pivot was set to its old yaw × Rz(90°), at terrain height + 4.05, so the pole sits in the sand and the towel lies flat. Originals are in `ServerStorage._Backup_20261111_Parasols`.
+  - Checked in an Edit screenshot. Studio only, not published.
+- 2026-11-11 — Beach: hammock sets back on the beach and hidden plots under the sand (user: "เพิ่มแปลงปลูกแบบซ่อนเหมือนเกาะเดิม / ย้ายแปลอันเก่า รูปที่สองมาวางบริเวรหาดเหมือนเกาะเก่า", plan approved).
+  - Hammocks:
+    - All 7 `BeachHammock` sets (palm pair + hammock + `HammockSeat`) were cloned from `ServerStorage._IslandKit_20261108.Decor` into `workspace.RestSpots`, with attr `PlacedFromKit`. The kit copies were kept.
+    - Three groups, each in a row along a fitted shoreline, 12 studs inland of the water, 13 apart, seats facing the sea: (−172,510), (−159,511), (−146,513) / (31,557), (44,561) / (242,621), (254,623). Each pivot is at sand height + 5.23.
+  - Hidden plots:
+    - `FarmPlots.FarmPlot55/56/57` (empty models that kept `BeachPlot` and `YieldMult 0.8`) got 12 Soil slabs, cloned from a FarmPlot6 Soil (attr `BeachHidden`, CastShadow off).
+    - They follow the beach as a chain, 46–82 studs inland of the waterline and 36 wide (east part: 40 inland, 18 wide). Each slab is turned and tilted (about 3.5°) to its fitted sand plane, with the top 0.35–0.6 under the sand.
+    - Gaps were left at the beach palms and at the sand mound near x 256. The bands stay clear of the hammocks (≈12 inland) and parasols (34–42 inland).
+    - Total ≈5,256 slots: 55 = x −178…−9 (4 slabs), 56 = x 9…197 (5), 57 = x 206…283 (3).
+  - Checked:
+    - Every slot point is under sand, and no soil shows in an overhead Edit screenshot.
+    - In Play, `FindSoilAt` on the sand finds the beach plots, and `GetSlotSurfacePoint` lands on the sand surface (±0.05).
+    - In Play, the character sat in a hammock and faced the sea (water 16 studs ahead).
+  - Not tested: an actual plant with real seeds, so as not to touch save data. Crops are not saved across sessions (seed money is refunded on leave), so reusing the old plot names does not bring old crops back.
+  - Studio only, not published.
+- 2026-11-11 — Group lantern-release countdown moved from a sign above the field to the top-left pill row, like the Loy Krathong buff label (user: "ย้ายไปแสดงด้านซ้ายเหมือนได้จากลอยกระทง", plan approved).
+  - Script: `StarterPlayer.StarterPlayerScripts.KrathongClient`.
+  - The `LanternCountdown` BillboardGui (15 studs above the field, seen only within 160 studs) was replaced by a `LanternCountdown` TextLabel in `KrathongBuffGui`. It is a clone of the `KrathongBuff` pill: white GothamBold 14, dark-blue stroke, no background.
+  - It shows island-wide while `KrathongLanternField` exists: "🏮 ปล่อยโคมพร้อมกันอีก m:ss · ยืนในลาน = โคมฟรี + บัฟ". Inside the field (radius `LANTERN_RADIUS` + 2, the same rule as the server) the ending becomes "✅ อยู่ในลานแล้ว". Screens narrower than 600 px drop the hint.
+  - The 1-minute warning toast now also carries the hint.
+  - New `layoutPills()` stacks the buff pill, then the countdown, in free 28-px rows. It skips the rain pill (64) and the trash-event pill (92) when they show.
+  - Backup: `ServerStorage._Backup_20261111.KrathongClient_before_countdownpill`.
+  - Play-tested with `DevForceSeason`: the pill sits at y 64 alone; with a test buff it is buff 64 / countdown 92; the in-field text shows; the old sign is gone; no script errors. Not checked: Thai text, an actual phone, overlap with rain/trash pills.
+  - Studio only, not published. The switch `KrathongFloat2026` is still off in live.
+- 2026-11-11 — Hanging a lantern now gives main luck +30% for 10 minutes instead of event-fish luck +10% (user: "แขวนโคม เปลี่ยนเป็นเพิ่มโชค 30 % แทน"; chose main player luck, 10 min).
+  - `ReplicatedStorage.LuckConfig`: new `LANTERN_LUCK_MULT = 1.3`. `Combine` multiplies luck by it while player attr `LanternLuckUntil` (server time) is in the future. Same pattern as `HugLuckUntil` and stacks with it.
+  - `ReplicatedStorage.KrathongConfig`: all 7 hanging lanterns (`HangLantern`, `HangYellow`…`HangPurple`) have `LuckMult = 1.3` instead of `EventBonus = 0.10`. BuffMinutes stays 10.
+  - `ServerScriptService.Krathong.KrathongService` (hang action): it no longer calls `applyBuff`, so hanging gives no event-fish buff. It extends `LanternLuckUntil` by BuffMinutes, capped at `BUFF_MAX_MINUTES` (60) from now. Message: "🏮 แขวนโคมแล้ว! โชค +30% อีก N นาที".
+  - `StarterPlayerScripts.KrathongClient`: the shop card for hanging lanterns reads "โชค +30% · 10 นาที". A new top-left pill `LanternLuck` ("🏮 โชค +30% · m:ss") stacks in `layoutPills` between the buff pill and the release countdown.
+  - Other krathongs, sky lanterns and group release are unchanged (still event-fish buff).
+  - Backups: `ServerStorage._Backup_20261111.*_before_hangluck` (LuckConfig, KrathongConfig, KrathongService, KrathongClient).
+  - Play-tested: no script errors; with `LanternLuckUntil` set, `Combine` went 194.4 → 252.7 (×1.300), the HUD showed Luck x252.7, and the pill showed above the countdown. Not tested: a real hang (it would use a real lantern from the bag), the shop card text on screen, Thai text.
+  - Studio only, not published. The switch `KrathongFloat2026` is still off.
+- 2026-11-11 — Chicken yard: `YardArea` is now a circle the size of the fenced yard (user: "ตรงเล้าไก่ช่วยปรับ YardArea ให้เป็นวงกรมเท่าลานเลี้ยงไก่").
+  - `workspace.FarmProps.ChickenYard.YardArea` changed from a 33×77 Block to a flat Cylinder: Size (1, 88, 88), axis up, centre (204.92, 5.67, −409.76), attr `Round`. The fence posts fit a circle of radius 47.00 around that same centre (gate on the west side). Radius 44 keeps chickens 3 studs inside the fence. Still invisible, no collide/query/touch.
+  - `StarterPlayerScripts.ChickenYardClient`: `randomOffset` picks evenly inside the circle when `YardArea` is a Cylinder (box logic kept for a Block). `inside()` uses flat distance for round parts, which also covers the cluck-range check. NoWalk props (EggStand, Incubator, Trough, CoopBlock) are still avoided.
+  - `ServerScriptService.ChickenFarm.ChickenService` `nearYard`: distance is now measured from the circle's edge (pickup range 25 unchanged).
+  - Backups: `ServerStorage._Backup_20261111.ChickenService_before_roundyard`, `ChickenYardClient_before_roundyard`, `YardArea_before_roundyard`.
+  - Play-tested: 10 chickens over 35 s, all inside (max 37.4 from centre, the old box allowed only ±16.5 on one axis), no script errors. Not tested: picking up a chicken from the yard edge.
+  - Studio only, not published.
+- 2026-11-11 — Re-applied the round `YardArea` (the user pressed Ctrl+Z by mistake). The undo had only put `FarmProps.ChickenYard.YardArea` back to the 33×77 Block; the ChickenYardClient/ChickenService edits and all earlier work today were still in place. It is a Cylinder again (1, 88, 88), centre (204.92, 5.67, −409.76), attr `Round`, recorded as one ChangeHistory step "RoundYardArea". Play check: 10 chickens, max 43.1 from centre, none outside radius 44. Studio only, not published.
+- 2026-11-11 — Activity plaza and shop plaza: lowered floating objects onto the floor (user: "บริเวณลานกิจกรรมและร้านค้าหลักวัตถุลอยจากพื้น").
+  - Cause: both plaza floors are Terrain Brick, which snaps to y 4.0, but the decor had been placed for grass height (y 5). Most items floated about 1.15 studs; the seed-shop group floated about 2.
+  - Moved 174 objects straight down only (no XZ or rotation change), one ChangeHistory step "PlazaSnapToFloor". Each object's visible footprint was sampled 5×5 against Terrain and dropped onto the highest point, so fence pieces on the grass edge stay up. Objects resting on other parts (FarmStall shelves, MountGacha showcase), Corgi and SpawnLocation were left alone.
+  - Covers `LayoutDecor.ActivityPlazaDecor.*` and `LayoutDecor.ShopPlazaDecor.*` (flower beds, lamps, benches, trees, market props, fence pieces), `IslandDecor.ActivityFountain`, `IslandDecor.ZoneSigns.SeedShopSign`, `Lights.Lantern` ×10, `Shops.FarmStall/Merchant/SeedSacks/VeggieCrate`, `GachaMachine`, `MountGachaMachine`, `MagicLlamaDisplay`, `RedeemCodeNPC`, `ToyHammerStand`, `PetFoodMachine`, `ShopCatNpc`, `TrashEventSign`, `LevelBoard`, `PlaytimeBoard`, `DonorBoard`, `LayoutDecor.Bench` ×2.
+  - Backup: `ServerStorage._Backup_20261111.PlazaObjects_before_snapfloor` (StringValue JSON: path, dy, original pivot).
+  - Checked: screenshots of the shop stall and the activity fountain ring show everything on the brick. In Play, all machine prompts were still present and enabled, with no new script errors. Not tested: using each prompt, phone view.
+  - Studio only, not published.
+- 2026-11-11 — Krathong in the stream now floats on top of the turquoise water sheet (user: "กระทงตอนลอยที่ลำธาร กระทงไม่ลอยบนผิวน้ำ"). Cause: the float height came from the terrain water (y 4.00), but `LayoutDecor.StreamDecor.WaterSheet` sits at y 4.29–4.37, so the krathong base drew under the see-through sheet and looked sunk.
+  - New attribute `KrathongSurfaceY` = 4.37 on `workspace.LayoutDecor.StreamDecor.WaterSheet` (update it if the sheets move).
+  - `StarterPlayerScripts.KrathongClient`: new `surfaceYAt` uses the sheet height when the drop point is inside a sheet part's rectangle and the terrain water is at most 0.5 below it. It is used for the float height and ripple ring (`spawnFloat`) and for the place animation's end point (`startPray` `water`). Path building and the server `floatHere` check still use terrain water.
+  - Checked in Play (krathongs sent from the server through `KrathongFx`): Banana/Bread/Lotus in the stream now have their base bottom at 4.26–4.30 and top at 4.69–5.11 (the sheet is 4.37). A sea test float stayed on the old height (bottom 2.93, water 3.00). Not tested: floating by hand with the button, other viewers, eye check of the look.
+  - Studio only, not published.
+- 2026-11-11 — Krathong in the stream floats a little higher (user: "ลำธารให้กระทงลอยสูงขึ้นอีกนิด ตอนนี้ยังจมน้ำอยู่"). New attribute `KrathongFloatLift` = 0.2 on `workspace.LayoutDecor.StreamDecor.WaterSheet`, added on top of `KrathongSurfaceY` by `surfaceYAt` in `StarterPlayerScripts.KrathongClient` (stream only; sea and other water unchanged). Tune the attribute to change the height, no script edit needed.
+  - Checked in Play (floats sent from the server): stream base bottoms are now 4.41–4.51 (were 4.26–4.30), sheet 4.37. A sea test float is unchanged (bottom ~2.9, water 3.00). In an Edit-mode top-down screenshot, all three krathongs sit fully on the turquoise water. Not tested: floating by hand with the button.
+  - Studio only, not published.
