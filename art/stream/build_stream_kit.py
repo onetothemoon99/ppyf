@@ -112,12 +112,17 @@ def blade(base, direction, length, width, mats, droop=0.45, segs=6):
             face(mat, list(reversed(quad)))
 
 PIECES = []
+# optional 2nd arg "bridges" = build only the two bridges -> BridgeKit.glb (2026-11-11 rail re-upload)
+ONLY = sys.argv[sys.argv.index("--") + 2] if "--" in sys.argv and len(sys.argv) > sys.argv.index("--") + 2 else None
 def add(name, fn):
+    if ONLY == "bridges" and not name.startswith("Bridge"):
+        return
     PIECE["name"] = name
     fn()
     PIECES.append(name)
 
 # ------------------------------------------------------------------ arched wooden bridge (span along X, deck ends at z = 0.25)
+RAIL_POST, RAIL_TOP, RAIL_LOW = 4.2, 4.0, (2.6, 1.2)   # heights above the deck
 def bridge(span, width, rise, rail=True):
     def fn():
         half = span / 2
@@ -140,6 +145,8 @@ def bridge(span, width, rise, rail=True):
                 ang = math.atan2(zf(x1) - zf(x0), x1 - x0)
                 box("Wood_Dark", (xm, sy * (width / 2 - 0.3), zf(xm) - 0.9), (x1 - x0 + 0.05, 0.6, 1.1), ry=-ang)
         if rail:
+            # 2026-11-11 rails raised (user: "ปรับรั้วบนสะพานให้สูงขึ้นอีกนิด"): posts 3.0 -> 4.2, top rail 2.8 -> 4.0,
+            # two lower rails (was one) so the side looks closed. Walls that stop players are Studio Parts (RailBlocker).
             k = int(span / 4)
             for sy in (-1, 1):
                 ys = sy * (width / 2 - 0.25)
@@ -147,15 +154,16 @@ def bridge(span, width, rise, rail=True):
                 for i in range(k + 1):
                     x = -half + 0.6 + (span - 1.2) * i / k
                     z = zf(x)
-                    cyl("Wood_Dark", (x, ys, z + 1.5), 0.3, 3.0, n=6)
-                    cyl("Wood_Mid", (x, ys, z + 3.05), 0.36, 0.2, n=6)
-                    tops.append(Vector((x, ys, z + 2.8)))
+                    cyl("Wood_Dark", (x, ys, z + RAIL_POST / 2), 0.3, RAIL_POST, n=6)
+                    cyl("Wood_Mid", (x, ys, z + RAIL_POST + 0.05), 0.36, 0.2, n=6)
+                    tops.append(Vector((x, ys, z + RAIL_TOP)))
                 for i in range(k):
                     a, b = tops[i], tops[i + 1]
                     m = (a + b) / 2
                     ang = math.atan2(b.z - a.z, b.x - a.x)
                     box("Wood_Mid", tuple(m), ((b - a).length + 0.1, 0.32, 0.32), ry=-ang)
-                    box("Wood_Light", tuple(m - Vector((0, 0, 1.2))), ((b - a).length + 0.1, 0.22, 0.22), ry=-ang)
+                    for low in RAIL_LOW:
+                        box("Wood_Light", tuple(m - Vector((0, 0, RAIL_TOP - low))), ((b - a).length + 0.1, 0.22, 0.22), ry=-ang)
         # stone abutments at both ends
         for sx in (-1, 1):
             for j, yy in enumerate((-width / 2 - 0.6, width / 2 + 0.6)):
@@ -281,7 +289,7 @@ for i, name in enumerate(PIECES):
 bpy.ops.object.select_all(action='DESELECT')
 for ob in objs:
     ob.select_set(True)
-bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, "StreamKit.glb"), export_format='GLB', use_selection=True, export_apply=True, export_yup=True)
+bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, "BridgeKit.glb" if ONLY == "bridges" else "StreamKit.glb"), export_format='GLB', use_selection=True, export_apply=True, export_yup=True)
 
 scn = bpy.context.scene
 scn.render.engine = 'BLENDER_WORKBENCH'
