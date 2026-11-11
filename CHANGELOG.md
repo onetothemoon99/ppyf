@@ -3630,3 +3630,127 @@
 - 2026-11-11 — Krathong in the stream floats a little higher (user: "ลำธารให้กระทงลอยสูงขึ้นอีกนิด ตอนนี้ยังจมน้ำอยู่"). New attribute `KrathongFloatLift` = 0.2 on `workspace.LayoutDecor.StreamDecor.WaterSheet`, added on top of `KrathongSurfaceY` by `surfaceYAt` in `StarterPlayerScripts.KrathongClient` (stream only; sea and other water unchanged). Tune the attribute to change the height, no script edit needed.
   - Checked in Play (floats sent from the server): stream base bottoms are now 4.41–4.51 (were 4.26–4.30), sheet 4.37. A sea test float is unchanged (bottom ~2.9, water 3.00). In an Edit-mode top-down screenshot, all three krathongs sit fully on the turquoise water. Not tested: floating by hand with the button.
   - Studio only, not published.
+- 2026-11-11 — Stream bridges: taller rails and players can no longer walk through them (user: "ปรับรั้วบนสะพานให้สูงขึ้นอีกนิดและปรับไม่เดินทะลุได้"). Covers all 4 bridges in `workspace.LayoutDecor.StreamDecor.Bridges` (3× BridgeRoad, 1× BridgePath).
+  - `art/stream/build_stream_kit.py`: posts 3.0 → 4.2, top rail 2.8 → 4.0 above the deck, two lower rails (at 2.6 and 1.2) instead of one. New optional arg `bridges` builds only the bridges → `art/stream/BridgeKit.glb`. Uploaded as asset 114429664989440 (`ServerStorage.BridgeKit`).
+  - In each bridge, `Wood_Dark` / `Wood_Mid` / `Wood_Light` were swapped for the new meshes, placed by matching the unchanged `Stone_Top`. Their collision is now off. The old Hull collision made one smooth shape over the rails, so players walked up and over them.
+  - New `Collision` folder in each bridge: 24 invisible `DeckWalk` slabs that follow the arch (the walking floor, CanQuery on) and 12 invisible `RailBlocker` walls per side (12 studs tall, CanQuery off, so clicks pass through). The ends stay open.
+  - Backup: `ServerStorage._Backup_20261111.Bridges_before_rail`.
+  - Checked in Play with 7-stud walls: walking into the rail is stopped at the rail line, and all 4 bridges can be walked end to end. With jumping, players got over the 7-stud walls, so they were raised to 12. The jump test at 12 is not done yet (MCP Play start got stuck). Edit screenshot of the plaza bridge shows the taller rails.
+  - Studio only, not published.
+- 2026-11-11 — Shop plaza fountain ground made flat (user: "ปรับพื้นที่บริเวณน้ำพุตอนนี้ไม่เรียบ"). Cause: terrain Ground bumps up to y 6.0 around `IslandDecor.PlazaFountain` poked through its paving (y 4.64) as a grey star shape. The brick plaza around it is at y 4.0.
+  - Terrain: in a circle of radius 40 around (-20, -55), the 4-stud cells y 0–4 are now solid Brick and everything above is Air (194 cells). In the ring from 40 to 48, Ground/Brick bumps above y 4 were cleared the same way (125 cells, nothing else touched).
+  - `IslandDecor.PlazaFountain` lowered: pivot y 4.32 → 4.00, same as `ActivityFountain`. The paving now sits on the brick.
+  - Props in `LayoutDecor.ShopPlazaDecor.Fountain` (4 potted shrubs, 3 lampposts, bench) were already at y 4.0, so none moved.
+  - Checked: downward raycasts from r 17 to 46 all hit Brick at y 4.0 (only a few edge samples were 4.3–5.5 before the ring pass). The top-down Edit screenshot shows an even brick floor and no grey patch. Not walked in Play.
+  - Backup: `ServerStorage._Backup_20261111.PlazaFountainGround_before_flatten` (TerrainRegion + fountain + props).
+  - Studio only, not published.
+- 2026-11-11 — Plaza benches can be sat on (user: "ปรับเก้าอี้ให้สามารถนั่งได้", picture of the activity plaza benches). Added an invisible `Seat` named `BenchSeat` to every `Bench` model in `workspace.LayoutDecor` that had none (15 benches: `ActivityPlazaDecor.MidRing` ×6, `ActivityPlazaDecor.Fountain` ×4, `LakeSurround.Benches` ×4, `ShopPlazaDecor.Fountain` ×1). The seat sits on top of the `Wood_Light` plank, faces away from the backrest (`Wood_Mid`), and has CanCollide/CanQuery off.
+  - Checked in Play on 4 benches: the character sits (Seat.Occupant set), faces away from the backrest. Not checked: how the sitting pose looks, the LakeSurround benches.
+  - Studio only, not published.
+- 2026-11-11 — Server memory check of the new island + backups moved out of the way (user: "ทดสอบว่าแรมบนเซิฟจะเป็นยังไง", then "ย้ายออกเลย"). Studio Play (1 player): no growth over 60 s; Workspace ≈24k instances, but ServerStorage held ≈130k (old `_Backup_*`, `_IslandKit_*` etc.), loaded on every live server.
+  - Moved 144 backup items (122,867 instances) into one folder `ServerStorage._ARCHIVE_20261111`: every `_Backup*`, `_IslandKit*`, `_IslandV5_Parked`, `_RoadTidy_20261109`, `_NewSoils_20261109`, `_RoundPlot5_20261109`, `FarmDressing_props_backup`, `FarmDressing_backup`, `SeasonalPropBackups`, `FishShopEyeFix_before_fins`. ServerStorage outside the archive is now ≈6.1k instances. Script references to these names are comments only (checked with grep).
+  - User saved the archive to `backups/ServerStorage_ARCHIVE_20261111.rbxm` (30.5 MB; header says 122,868 instances = all moved items + folder). Then the folder was deleted from the place. To restore any backup: Studio → right-click ServerStorage → Insert from File → that .rbxm.
+  - Play check after removal: game ≈41.9k instances on the server (was ≈166k), no new errors in the output.
+  - Studio only, not published (live server gains nothing until the user publishes).
+- 2026-11-11 — EXP อัพเลเวลตั้งแต่ Lv2000 ตามแผน `LEVEL_CURVE.md` (ผู้ใช้: "เริ่มทำตามแผนได้เลย"):
+  - `ServerScriptService.LevelSystem.xpNeededForLevel`: Lv2000 ขึ้นไป = `220,000 + (level − 2000) × 20,000`; ต่ำกว่า 2000 = `level × 100` เหมือนเดิม · `notifyLevel` ตั้ง Attribute ผู้เล่น `LevelXPNeeded`
+  - `StarterPlayer.StarterPlayerScripts.LevelGui` `syncLoadedLevel`: ใช้ `LevelXPNeeded` แทนคำนวณ `level × 100` เอง (ไม่งั้นหลอด EXP เพี้ยนตอนเกิน 2000)
+  - สำรองสคริปต์เดิม: `backups/LevelSystem_before_curve2000_20261111.lua` · อ่านบอร์ดก่อนแก้: สูงสุด 1894 ยังไม่มีใครถึง 2000 จึงไม่ต้องแปลงข้อมูล
+  - ทดสอบ: สูตรได้ 199,900 / 220,000 / 240,000 ที่ Lv1999/2000/2001, ลูปอัพข้าม 1998 → 2002 ถูก, Play ไม่มี error ของ LevelSystem และ LevelXPNeeded ถูกที่ Lv1422 · ไม่ได้ลองเลเวล 2000 ใน Play จริง (กันเซฟทับข้อมูลบัญชีจริง)
+  - อัปเดตตารางใน `PLANTS.md` และสถานะใน `LEVEL_CURVE.md` · ยังไม่ได้ประกาศผู้เล่น · Studio เท่านั้น ยังไม่ได้ Publish
+- 2026-11-11 — `AGENTS.md`: added a "Backups" section (user order): no backups inside the place; scripts are saved as `backups/<Script>_before_<change>_<date>.lua`; models are saved via the user's Save to File as `.rbxm` in `backups/`; old `ServerStorage._Backup_*` refs now mean `backups/ServerStorage_ARCHIVE_20261111.rbxm`. Docs only, nothing changed in Studio.
+- 2026-11-11 — Sunflower crop, ripe stage, now looks like the textured field sunflower (user: picture of `FarmFlora.Sunflower`, "ทานตะวันตอนปลูกแล้วโตพร้อมเก็บเกี่ยวให้เป็นแบบนี้"). `ServerStorage.CropTemplates.Sunflower.Stage5`: the cartoon Stem/Petals/Center were replaced by one MeshPart `Flower` (copy of `FarmFlora.Sunflower.body.body_geom`, scaled ×1.8 → 3.6 × 5.7 studs, faces -Z like the old one). Stages 1–4, `HeldFruit` and `PlantingSystem` are unchanged.
+  - Checked: Edit preview on a soil slab (flower faces the -Z camera, base on the ground). Not tested: planting and harvesting in Play.
+  - Backup: `backups/Sunflower_before_ripe-look_20261111.rbxm` (old template, 16 instances; saved by the user). The parked copy in ServerStorage was deleted.
+  - Studio only, not published.
+- 2026-11-11 — โคมลอยปล่อยได้ทุกที่ + ฉากโคมลอยขึ้นจากชายหาด (ผู้ใช้สั่ง ตามแผนที่อนุมัติ):
+  - `ServerScriptService.Krathong.KrathongService`: แยกแกนปล่อยโคมเป็น `doRelease` (ลาน E บนท่าเรือยังใช้ได้), เพิ่ม `actions.releaseHere` — ต้องถือโคมลอยในมือ, ไม่ว่ายน้ำ, เหนือหัวโล่ง 40 สตั๊ด (`skyClear`: ข้ามตัวละคร/ชิ้นโปร่งใส/CanCollide ปิด, ชนหลังคาทึบหรือ terrain = ไม่ให้ปล่อย) ใช้ตำแหน่งตัวจากเซิร์ฟ; fx ส่ง `ownerId`; โคลน `KrathongTemplates.BeachLanternLine` → `workspace.KrathongBeachLanternLine` (ล่องหน) ตามสวิตช์; ข้อความร้าน/ข้อความเตือนเปลี่ยนเป็น "ปล่อยได้ทุกที่ที่เหนือหัวโล่ง"
+  - `StarterPlayer.StarterPlayerScripts.KrathongClient`: ปุ่ม "🏮 ปล่อยโคม" (ใช้ปุ่มเดียวกับลอยกระทง, จอย Y) ขึ้นเมื่อถือโคมลอยและยืนบนพื้น ใต้หลังคาเป็นปุ่มเทา "ออกไปที่โล่งก่อน"; ท่าชูโคม 1.3 วิ โคมเริ่มเหนือหัว; โคมที่ไกลกล้องเกิน 800 ไม่สร้าง; ฉากริมหาด: กลางคืน (เวลาเดียวกับ NightLightsClient) ปล่อยโคมประกอบฉาก 1 ดวงทุก 2–3.5 วิ บนฟ้าไม่เกิน 20 ดวง ไม่มี PointLight, รอบปล่อยพร้อมกัน :00/:30 เพิ่มโคมจากหาด 40 ดวงทยอยใน 6 วิ; คำในร้านเปลี่ยนตาม
+  - `ReplicatedStorage.KrathongConfig`: เพิ่ม `SKY_CLEAR`, `LANTERN_CULL`, `BEACH_AMBIENT` (false = ปิดเฉพาะโคมประกอบฉาก), `BEACH_EVERY`, `BEACH_MAX`, `BEACH_MASS`, `NIGHT_ON/OFF`; `MAX_LANTERNS` 60 → 80
+  - ใหม่ `workspace.KrathongDecor.BeachLanternLine`: จุดส้ม P01–P13 ตามแนวหาดใต้ (x -220…260, ห่างน้ำ ~8 สตั๊ด, Attribute `HalfWidth` 5) ลากแก้ใน Edit ได้ ตอนเล่นล่องหน
+  - สำรอง: `backups/KrathongService_before_releaseAnywhere_20261111.lua`, `backups/KrathongClient_before_releaseAnywhere_20261111.lua`, `backups/KrathongConfig_before_releaseAnywhere_20261111.lua` (ตรงกับ Source เดิมทุกไบต์)
+  - ทดสอบใน Studio Play: ปล่อยตรงจุดเกิดได้ (หักโคม 1, บัฟ +10%, ท่าชูโคมเล่น), ใต้หลังคาร้านกระทง ปุ่มเทาและเซิร์ฟปฏิเสธ, กลางคืนมีโคมประกอบฉากขึ้นจากหาด, `DevMassLanternNow` ได้โคมบนฟ้า 61 ดวง (ไฟจริง 12), ไม่มี error · FPS ใน Studio ตกเหลือ ~14 ระหว่างทดสอบ แต่ซ่อนโคม/ไม่มีโคมก็ยัง ~14 จึงยังไม่ได้ข้อสรุปว่าโคมทำหน่วง · ยังไม่ได้ทดสอบ: ในน้ำ (ว่ายน้ำ), มือถือ/จอยจริง, ผู้เล่นหลายคน, ดูฉากกลางคืนด้วยตา (เซิร์ฟซิงก์เวลากลางวันทับ) · คืนจำนวนโคมของบัญชีทดสอบเป็น 19 เท่าเดิมแล้ว
+  - Studio เท่านั้น ยังไม่ได้ Publish
+- 2026-11-11 — โคมลอยกลางคืนเรืองแสงแบบรูปจริง + ฟ้าโคมเต็ม (ผู้ใช้ส่งรูปโคมลอยเต็มฟ้า ตามแผนที่อนุมัติ):
+  - โมเดลใหม่ `ReplicatedStorage.KrathongModels.SkyLanternGlow`: `Paper` = กล่องกระดาษ 4 เหลี่ยมปากบานบน ก้นเปิด สองหน้า (mesh asset 118202950414961 จาก `art/lantern/build_sky_lantern.py` รัน Blender แบบ headless, Neon สี 222,100,30 โปร่ง 0.1) + `Flame` ไส้ไฟ Neon เหลืองขาว · วงแสงฟุ้ง = ภาพ rbxassetid://95611683178632 (`art/lantern/make_halo.js`, decal 139566954330823) อัปโหลดในนามกลุ่ม 642396060 · โคมในมือ/รูปกระเป๋ายังเป็น `SkyLantern` เดิม (ไม่ได้แก้)
+  - `StarterPlayer.StarterPlayerScripts.KrathongClient`: โคมบนฟ้าทุกดวงใช้ `SkyLanternGlow` + วงแสง BillboardGui ไหวแบบเปลวไฟ จางพร้อมโคม (ทุกชิ้น), ขนาดสุ่ม ×1.6–2.9, ไม่มี PointLight; จำนวนโคมประกอบฉากคูณตามระดับกราฟิก (สูง/กลาง 1, ต่ำ 0.5, ต่ำสุด 0.25); ส่วนใหม่ท้ายไฟล์ "แสงกลางคืนตอนเทศกาล": กลางคืน + ร้านกระทงอยู่ในแมพ = `Lighting.Bloom` Threshold/Intensity/Size 1.1/1.2/30 (คืน 2/1/24 ตอนเช้า, ถ้า DayCycle เปลี่ยนค่าระหว่างนั้นจะจำค่าใหม่ไว้คืน) + `ColorCorrectionEffect` ของเราเอง `KrathongNightTint` โทนน้ำเงิน — ของ Neon อื่นทั้งแมพฟุ้งขึ้นด้วยตอนกลางคืน
+  - `ReplicatedStorage.KrathongConfig`: เพิ่ม `GLOW_MODEL`, `LANTERN_SCALE`, `HALO_IMAGE`, `HALO_SIZE` 2.3, `HALO_ALPHA`, `GFX_LANTERN_MULT`, `NIGHT_LOOK` (nil = ไม่ปรับแสง); `LANTERN_SECONDS` 45 → 60, `MAX_LANTERNS` 80 → 160, `LANTERN_LIGHT_LIMIT` 12 → 0, `BEACH_EVERY` 2–3.5 → 0.8–1.5 วิ, `BEACH_MAX` 20 → 50, `BEACH_MASS` 40 → 100
+  - สำรอง: `backups/KrathongClient_before_nightGlow_20261111.lua`, `backups/KrathongConfig_before_nightGlow_20261111.lua` (สร้างจากสำรองรอบเช้า + การแก้ของวันนี้ ตรวจความยาว/checksum ตรงกับ Studio ก่อนแก้) · ไม่ได้แก้โมเดลเดิม จึงไม่มี .rbxm
+  - ทดสอบใน Studio Play ตอนกลางคืนที่หาดใต้: โคมประกอบฉากขึ้น 49 ดวงใน 40 วิ ทุกดวงมีวงแสง, Bloom/Tint ถูกตั้ง, รอบปล่อยพร้อมกันได้โคมบนฟ้า 145 ดวง FPS ~57 (Studio PC) · ปรับสี/วงแสงจากภาพทดสอบ (วงแสงใหญ่ซ้อนกันเป็นก้อนแดง → เล็กลง; สีอ่อนไป → เหลือง) แล้วตั้งค่าสุดท้าย · ยังไม่ได้: ดูด้วยตาหลังตั้งค่าสุดท้ายในรอบเล่นใหม่, ทดสอบคืนค่าตอนเช้าจริง, มือถือ, ระดับกราฟิกต่ำ · ไม่ได้แตะเมฆ (WeatherClient คุมเมฆตอนฝนตก) ฟ้าจึงยังมีเมฆเทา
+  - Studio เท่านั้น ยังไม่ได้ Publish
+- 2026-11-11 — โคมประกอบฉากย้ายจากชายหาดไปขึ้นกลางทะเล (ผู้ใช้สั่ง แล้วสั่งซ้ำว่า "ใกล้ไป ย้ายไปไกลอีก"):
+  - `workspace.KrathongDecor.BeachLanternLine`: จุด P01–P13 เลื่อนไป +Z 250 สตั๊ด ระดับผิวน้ำ (ตอนนี้ P01 (-220,754) … P07 (20,802) … P13 (260,878)), `HalfWidth` 5 → 50 (โคมขึ้นห่างฝั่งราว 200–300), สีจุดใน Edit เป็นฟ้า · พิกัดเดิมก่อนย้าย (ใช้คืนค่า): P01(-220,4.2,504) P02(-180,3.0,512) P03(-140,2.4,512) P04(-100,3.0,536) P05(-60,2.3,532) P06(-20,3.0,548) P07(20,2.6,552) P08(60,2.8,568) P09(100,2.6,576) P10(140,2.7,592) P11(180,3.0,616) P12(220,2.2,616) P13(260,3.0,628), HalfWidth 5 · ไม่ได้ Save to File .rbxm (ผู้ใช้ไม่ได้บันทึก จดพิกัดไว้แทน)
+  - `StarterPlayer.StarterPlayerScripts.KrathongClient`: จุดสุ่มรับเฉพาะน้ำ (เดิมรับเฉพาะพื้น) เริ่มเหนือผิวน้ำ 0.8; โคมประกอบฉากค่อยๆ ปรากฏ 1.5 วิแรก (รอบพร้อมกันที่หน่วงเวลาก็ไม่โผล่ค้างก่อนขึ้น); ลมโคมประกอบฉากเบาลง (10–25 + Z 12 เดิม 25–60 + Z 30) · โคมผู้เล่น/ลานท่าเรือไม่เปลี่ยน
+  - สำรอง: `backups/KrathongClient_before_seaLanterns_20261111.lua` (ตรวจ checksum ตรงกับ Studio ก่อนแก้)
+  - ทดสอบใน Studio Play กลางคืน: ระยะ 120 → โคม 31 ดวงขึ้นจากน้ำทุกดวง ค่อยๆ ปรากฏถูก; ลองระยะ 250 (ย้ายในเครื่องระหว่างเล่น) → 33 ดวงที่ z 714–928 ขึ้นจากทะเลไกล ดูจากหาดแล้ว จากนั้นตั้งค่าเดียวกันใน Edit · ยังไม่ได้เล่นรอบใหม่หลังตั้งใน Edit
+  - Studio เท่านั้น ยังไม่ได้ Publish
+- 2026-11-11 — เติมทรายพื้นใต้ทะเล (ผู้ใช้สั่ง: พื้นใต้ทะเลเป็นลายตารางมืด):
+  - Terrain: ทุกช่องน้ำชั้น y −32…−28 ที่ด้านบน (−28…−24) ก็เป็นน้ำ → Sand เต็มช่อง 122,056 ช่อง (ทั้งแมพ ±1024), ชั้นบนใส่ Sand บางส่วนตาม `math.noise` (occupancy 0–0.85) ให้เป็นเนินเตี้ยๆ · ทะเลตื้นขึ้น ~4–7.4 สตั๊ด ผิวน้ำ/ชายหาด/หิน/เกาะไม่แตะ · ไม่มีสคริปต์ที่ใช้ความลึกทะเล (FarmDressing ใช้ Baseplate3 แค่ตอนสร้างพื้น)
+  - `workspace.Baseplate3.Texture` (ลายตาราง): Transparency 0.8 → 1 (ค่าเดิมเก็บไว้ใน attribute `OldTransparency`) ไม่ได้ลบ
+  - สำรอง: TerrainRegion ชั้น y −36…−24 (ช่อง (−256,−9,−256), 512×3×512) → `backups/SeabedTerrain_before_sand_20261111.rbxm` (TerrainRegion 1 ชิ้น 11 KB ผู้ใช้ Save to File แล้ว ลบตัวที่พักไว้ใน ServerStorage แล้ว) · คืนค่า: `Terrain:PasteRegion(tr, Vector3int16.new(-256,-9,-256), true)`
+  - ตรวจใน Edit: raycast โดนทราย y −25.8, ภาพใต้น้ำเป็นทรายลายคลื่นไม่มีลายตาราง · ยังไม่ได้ดูใน Play (สีจะอมน้ำเงินตามสีน้ำ)
+  - Studio เท่านั้น ยังไม่ได้ Publish
+- 2026-11-11 — ย้ายน้องนากเก็บขยะไปขอบทะเลสาบ (ผู้ใช้: มองไม่เห็นนาก อยู่หลังต้นไม้นอกรั้ว):
+  - `ReplicatedStorage.TrashEventConfig`: `NPC_POS` (158, 7.8, 298) → (185, 10, 322) = ทางทรายในรั้ว ติดหินขอบน้ำฝั่งตะวันตกเฉียงใต้ (พื้นทราย y 7 เรียบ ไม่มีม้านั่ง/เสาไฟ/หินทับ) · `NPC_LOOK` y 7.8 → 10 (หันเข้ากลางทะเลสาบ (290, 370) เหมือนเดิม)
+  - สำรอง: `backups/TrashEventConfig_before_otterLakeEdge_20261111.lua`
+  - ทดสอบ: ย้ายตัวนากในรอบ Play ไปจุดเดียวกัน ฐานลงพื้นพอดี (ก้น y 7) ผู้ใช้ดูแล้วสั่งแก้ถาวร · ยังไม่ได้เล่นรอบใหม่หลังแก้ค่า
+  - Studio เท่านั้น ยังไม่ได้ Publish
+- 2026-11-11 — ปล่อยโคมลอย: ชูโคมค้างเหนือหัว 10 วิแล้วค่อยปล่อย (ผู้ใช้สั่ง):
+  - `StarterPlayer.StarterPlayerScripts.KrathongClient`: ค่าใหม่ `LIFT_HOLD` (= `Config.LANTERN_HOLD_SECONDS` ถ้ามี ไม่งั้น 10) และ `LIFT_ABOVE_HEAD` 0.4 · โคมที่ผู้เล่นปล่อยเอง (ไม่ใช่รอบปล่อยพร้อมกัน) เกิดด้วย delay = LIFT_HOLD และมี `holdChar` · ใน Heartbeat ช่วงก่อน t0 โคมตามหัวตัวละคร (ก้นโคมเหนือหัว 0.4, หักค่าส่าย age 0 ออก ตอนเริ่มลอยจึงไม่กระตุก) · ตัวละครหาย/ไม่มีหัว = ปล่อยทันที · ท่าชูแขน `reach` และล็อกเดินค้าง LIFT_HOLD + 0.3 วิ (เดิม 1.3) · ปุ่มปล่อยกดซ้ำได้หลัง LIFT_HOLD + 0.3 วิ
+  - สำรอง: `backups/KrathongClient_before_liftHold10s_20261111.lua` (สร้างจากสำรอง seaLanterns + บรรทัดที่ต่าง ตรวจ hash ทุก 40 บรรทัดตรงกับ Studio: 79,085 ไบต์ 1,474 บรรทัด)
+  - ทดสอบใน Studio Play (ยิง `KrathongFx` "lantern" จากเซิร์ฟ): โคมอยู่เหนือหัวนิ่ง 10 วิ แล้วลอยขึ้น (y 13.1 → 13.9 ที่ 11 วิ → 17.9 ที่ 14 วิ) ภาพจากกล้องเห็นโคมเรืองแสงเหนือหัว · หลังลดความสูงจาก 0.9 เป็น 0.4 ยังไม่ได้ดูอีกรอบ · ยังไม่ได้กดปุ่มปล่อยจริงจากกระเป๋า / ดูจากเครื่องผู้เล่นอื่น
+  - Studio เท่านั้น ยังไม่ได้ Publish
+- 2026-11-11 — ชูโคมลอย: เพิ่มตัวเลขนับถอยหลัง + ซ่อนโคมในมือระหว่างชู (ผู้ใช้สั่ง):
+  - `StarterPlayer.StarterPlayerScripts.KrathongClient` `startRelease`: ระหว่างชู (LIFT_HOLD + 0.3 วิ) ซ่อน Tool ที่ถือ (Transparency ของ BasePart/Decal/Texture = 1, ปิด Highlight/Light/Particle/Billboard/SurfaceGui/Beam/Trail ใน Tool และ Highlight ที่ตัวละครชี้ไปที่ Tool) แล้วคืนค่าเดิมตอนปล่อยแขน · ทุกเครื่องซ่อนเอง
+  - `spawnLantern` + Heartbeat: โคมที่ชูค้างมี BillboardGui `HoldCountdown` (AlwaysOnTop) ตัวเลขขาวขอบส้มเข้มบนตัวโคม ขนาดตามโคม นับ 10 → 1 เด้งเบาๆ ทุกวินาที ลบทิ้งตอนโคมเริ่มลอย
+  - สำรอง: `backups/KrathongClient_before_holdCountdown_20261111.lua` (สร้างจากสำรอง liftHold10s + การแก้รอบก่อน ตรวจ hash ทุก 40 บรรทัดตรงกับ Studio: 81,055 ไบต์ 1,494 บรรทัด)
+  - ทดสอบใน Studio Play (ถือโคม + ยิง `KrathongFx` "lantern" จากเซิร์ฟ): Handle ของโคมในมือ Transparency 1 ระหว่างชู แล้วกลับเป็น 0 หลังปล่อย, ป้ายนับถอยหลังขึ้นและลดลงทุกวินาที แล้วหายตอนลอย · รอบแรกวางตัวเลขเหนือโคม แต่ป้ายชื่อผู้เล่นบัง จึงย้ายมาไว้บนตัวโคม · ตำแหน่งใหม่ยังไม่ได้ดูภาพ (เริ่ม Play จาก MCP ค้าง)
+  - Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-11 — ตุ่นนักอนุรักษ์ (Platypus) ดำงมกระทง แล้วถือ 5 วิก่อนได้เหรียญ (ผู้ใช้สั่ง "ปรับตุ่นตอนงมในน้ำ ... ถือกระทงสัก 5 วินาทีถึงจะได้เหรียญ")
+  - `ServerScriptService.PetSystem.Abilities.KrathongCollector`: ตอนงมตั้ง `WorkAnim` = "dive" แทน "peck"; งมเสร็จตั้ง Attribute `KrathongGot` = "เวลาเซิร์ฟ;5" แล้ว `task.delay(HOLD_TIME = 5)` ค่อยบวกเหรียญ + `KrathongCoin` + แจ้งเตือนมุมขวาบน (ระหว่างถือเก็บสัตว์ได้ ยังได้เหรียญ; ออกเกมก่อน = ไม่ได้); รอบ 15 วิ และเรต 100–1,000 เท่าเดิม
+  - `StarterPlayer.StarterPlayerScripts.PetAnimator`: โหมดท่าทำงานใหม่ "dive" — มุดหัวลง จมลง 1.1 studs ส่ายตัว แล้วเด้งโผล่หน้าเชิด
+  - `StarterPlayer.StarterPlayerScripts.PlatypusFx`: เอากระทงจิ๋วลอยเข้าหาตัวออก; ใส่ฟองอากาศระหว่างงม + น้ำกระเซ็นตอนโผล่; `KrathongGot` = ถือกระทงในมือ; `KrathongCoin` = กระทงหายพร้อมประกายเทียน + ตัวเลขเหรียญ; แก้บั๊กระหว่างทาง (`x and v:match()` ได้ค่าแค่ตัวแรก)
+  - สำรอง: `backups/KrathongCollector_before_holdCoin_20261111.lua`, `backups/PlatypusFx_before_holdCoin_20261111.lua`, `backups/PetAnimator_before_diveWork_20261111.lua` (ทั้ง 3 ตรวจ checksum ตรงกับ Studio)
+  - ทดสอบใน Studio Play ที่ขอบทะเลสาบ (190, 380): 2 รอบ งม 1.6 วิ → `KrathongGot` → เหรียญ +500 / +400 ห่าง 5.0 วิพอดี; ฝั่งผู้เล่น ตัวจม −1.1 ระหว่างงม ฟอง 3–5 ลูก (กราฟิกสูง) กระทงในมือโผล่ ~4.6 วิแล้วหายตอนเหรียญเข้า ไม่มี error; ยังไม่ได้ดูหน้าตาด้วยตา/มือถือ/ผู้เล่นอื่นมองเห็น
+  - Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-12 — ตุ่นนักอนุรักษ์: แท่งเทียนหายไปพร้อมกระทง (ผู้ใช้แจ้งว่าเทียนค้างในมือ)
+  - `StarterPlayer.StarterPlayerScripts.PlatypusFx` `setHolding`: ซ่อน/โชว์ชิ้น `CoinHeld` (แท่งเทียนบนกระทง ชื่อในโมเดลตั้งผิด) พร้อม `KrathongHeld` และ `CandleFlame`; โมเดลต้นแบบไม่ได้แตะ (ตู้โชว์/เมนูยังถือครบ)
+  - สำรอง: `backups/PlatypusFx_before_hideCandle_20261112.lua` (checksum ตรงกับ Studio)
+  - ทดสอบใน Studio Play: ไม่ถือ = เทียนโปร่งใส 1, ถือ = 0, เหรียญเข้า = 1 พร้อมกระทง
+  - Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-12 — กระทงลอยในทะเลสาบใหญ่ ผู้เล่นลงไปเก็บได้เหรียญ (ผู้ใช้สั่ง; มีเฉพาะวันลอยกระทง 24 พ.ย.)
+  - `ServerScriptService.Krathong.KrathongLakeService` (Script ใหม่): เปิดเฉพาะ 24 พ.ย. 2026 เวลาไทย (UTC+7) 00:00–23:59 ไม่ผูกสวิตช์ KrathongFloat2026; สร้าง `workspace.KrathongLake` กระทง 20 ใบ (โคลน Lotus/Banana/Bread จาก `KrathongModels` x1.3 Anchored ชนไม่ได้) สุ่มจุดที่เป็นน้ำจริงในกรอบ x 194–386 z 224–516 ห่างฝั่ง/ศาลา ≥6 และห่างกัน ≥8; ผู้เล่นเข้าใกล้ ≤4.5 studs (เซิร์ฟเช็กทุก 0.2 วิ) = เก็บ ได้ 200–1,000 เหรียญ (200–500 ค่าละ 18%, 600–800 ค่าละ 7%, 900/1,000 ค่าละ 3.5%) + แจ้งเตือนมุมขวาบน; เกิดใหม่ที่อื่นหลัง 20 วิ; ไม่จำกัดต่อชั่วโมง (ผู้ใช้เลือก)
+  - `ReplicatedStorage.KrathongLakeFx` (RemoteEvent สร้างตอนรัน) + `StarterPlayer.StarterPlayerScripts.KrathongLakeFx` (LocalScript ใหม่): โยก/หมุน/ลอยเลื่อนบนเครื่องผู้เล่น (≤220 studs), เก็บแล้วมีวงน้ำ + เสียงน้ำ, คนเก็บเห็น "🌸 💰 +เหรียญ"
+  - ทดสอบใน Studio: ตั้ง Attribute `workspace.DevKrathongLake = true` (มีผลเฉพาะใน Studio; ตั้งค้างไว้แล้ว)
+  - ทดสอบใน Studio Play: 20 ใบ, เก็บได้ +200 และ +500 (เหรียญบัญชีทดสอบเพิ่มจริง 700), เกิดใหม่ครบ 20 ใน 21 วิ, ฝั่งผู้เล่นกระทงขยับ + popup ขึ้น, ไม่มี error; ยังไม่ได้ทดสอบมือถือ/หลายคน/การเปิดปิดตามวันจริง
+  - สคริปต์ใหม่ทั้งหมด ไม่มีสำรอง · Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-12 — ย้ายกระทงลอยเก็บเหรียญจากทะเลสาบใหญ่ไปลำธาร (ผู้ใช้สั่ง "ย้ายไปลำธารแทน")
+  - `ServerScriptService.Krathong.KrathongLakeService`: จุดเกิดสุ่มตามเส้นกลางลำธารจากน้ำตก `STREAM_LINE` (404,38) → (362,76) → (324,106) → (286,124) → (248,130) → (210,128) → (170,124) → (138,126) ห่างเส้นได้ ±24 ต้องเป็นน้ำจริงและมีน้ำรอบตัว 4 studs (ไม่ชิดตลิ่ง/ใต้สะพาน); วางกระทงตามผิวแผ่นน้ำสีฟ้าคราม `SURFACE_Y` 4.37 (ไม่งั้นจมใต้แผ่น); ค่าอื่นเท่าเดิม (20 ใบ, 200–1,000, 20 วิ, เฉพาะ 24 พ.ย. เวลาไทย); ชื่อโฟลเดอร์/สคริปต์ยังเป็น KrathongLake
+  - สำรอง: `backups/KrathongLakeService_before_stream_20261112.lua` (checksum ตรงกับ Studio)
+  - ทดสอบใน Studio Play (`workspace.DevKrathongLake = true`): 20 ใบ อยู่ในช่วง x 149–373 z 60–131 ก้นกระทงที่ y 4.12, เก็บได้ +300 (เหรียญบัญชีทดสอบเพิ่มจริง), ภาพหน้าจอเห็นกระทงลอยบนลำธาร
+  - Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-12 — รั้วทะเลสาบกับราวสะพาน: กำแพงล่องหนเตี้ยลงเท่ารั้วจริง กระโดดข้ามได้ (ผู้ใช้แจ้งว่าตัวละครตัวเตี้ยกระโดดข้ามไม่ได้)
+  - `workspace.LayoutDecor.LakeSurround` ชิ้น `Fence8/Blocker` 102 ชิ้น: สูง 14 → 3.85 (ขอบบน = ขอบบนรั้วไม้ชิ้นนั้น ขอบล่างที่พื้นเท่าเดิม)
+  - `workspace.LayoutDecor.StreamDecor.Bridges.*.Collision.RailBlocker` 96 ชิ้น (4 สะพาน): สูง 12 → 4.6 จากพื้นสะพาน (ย่อตามแกนขึ้นของชิ้นเอง เพราะชิ้นเอียงตามโค้งสะพาน) — แทนที่ค่า 12 ที่เคยตั้งไว้กันกระโดดข้าม (2026-11-11)
+  - ไม่ได้แตะกำแพงล่องหนลานร้านค้า/ลานกิจกรรม (สูง 10)
+  - สำรอง: `backups/FenceBlockers_before_realHeight_20261112.lua` (ขนาด/ตำแหน่งเดิม + โค้ดคืนค่า วางใน Command Bar ได้เลย) แทน .rbxm เพราะแก้แค่ความสูง
+  - ทดสอบใน Studio Play: รั้วทะเลสาบและราวทั้ง 4 สะพาน เดินชนแล้วหยุดที่รั้ว (−0.7 ถึง −0.9 studs) กระโดดแล้วข้ามได้ทุกจุด (JumpHeight 7.2); ยังไม่ได้ลองกับตัวละครตัวเตี้ยจริง/มือถือ
+  - Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-12 — เก็บกระทงลอยในลำธาร: เปลี่ยนจากเข้าใกล้แล้วเก็บเลย เป็นกด E ค้าง (ผู้ใช้สั่ง)
+  - `ServerScriptService.Krathong.KrathongLakeService`: กระทงแต่ละใบมี `ProximityPrompt` "CollectPrompt" ที่ Handle ("เก็บกระทง" / "🌸 กระทงลอย", E, ค้าง 1.5 วิ, ระยะ 8, ไม่ต้องเห็นตรง) — มือถือแตะค้าง จอยกดค้าง; กดสำเร็จ เซิร์ฟเช็กระยะตัวละคร ≤12 แล้วจ่ายเหรียญ (ลูปเก็บอัตโนมัติทุก 0.2 วิ เอาออกแล้ว); ค่าอื่นเท่าเดิม
+  - สำรอง: `backups/KrathongLakeService_before_holdE_20261112.lua` (checksum ตรงกับ Studio)
+  - ทดสอบใน Studio Play: ยืนข้างกระทง 2.5 วิไม่เก็บ, กดค้าง 0.7 วิไม่เก็บ, ค้าง 1.9 วิเก็บได้ +200; ปุ่มขึ้นจริง (BillboardGui "Prompt" เกาะ Handle ใน PlayerGui.ProximityPrompts) แต่ภาพ screen_capture ไม่ติดปุ่ม — ยังไม่ได้เห็นปุ่มด้วยตา/มือถือ
+  - Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-12 — เหรียญจากกระทงลอยในลำธารเปลี่ยนเป็น 1/5/10/20/50/100/500/1,000 ค่ายิ่งสูงยิ่งออกยาก (ผู้ใช้สั่ง)
+  - `ServerScriptService.Krathong.KrathongLakeService` `REWARDS`: 1 = 30%, 5 = 22%, 10 = 17%, 20 = 12%, 50 = 9%, 100 = 6%, 500 = 3%, 1,000 = 1% (เฉลี่ย ~41 ต่อใบ เดิม 200–1,000 เฉลี่ย ~445)
+  - `StarterPlayer.StarterPlayerScripts.KrathongLakeFx`: ตัวเลข +เหรียญเป็นสีทองเมื่อได้ ≥500 (เดิม ≥600)
+  - สำรอง: `backups/KrathongLakeService_before_coins1to1000_20261112.lua`, `backups/KrathongLakeFx_before_coins1to1000_20261112.lua` (checksum ตรงกับ Studio ทั้งคู่)
+  - ทดสอบ: สุ่ม 10,000 ครั้งได้สัดส่วนตรงตาราง (เฉลี่ย 40.1); Studio Play กด E ค้างเก็บ 3 ใบ ได้ 1, 10, 10
+  - Studio เท่านั้น ยังไม่ได้ Publish
