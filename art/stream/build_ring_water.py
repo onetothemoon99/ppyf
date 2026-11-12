@@ -4,6 +4,8 @@ import bpy, bmesh, math, sys, os
 from mathutils import Vector
 
 OUT = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else os.path.dirname(os.path.abspath(__file__))
+# 2026-11-12: "onesheet" after <outdir> = every band in one welded mesh (Water_Mid) -> <Name>_One.glb. Separate band MeshParts left dotted dark seams in Roblox.
+ONE = "onesheet" in sys.argv
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o, do_unlink=True)
 
@@ -43,7 +45,7 @@ samples.append(P[-1]); widths.append(HW[-1] - INSET)
 
 BM = {}
 def face(mat, pts):
-    bm = BM.setdefault(mat, bmesh.new())
+    bm = BM.setdefault("Water_Mid" if ONE else mat, bmesh.new())
     vs = [bm.verts.new(Vector((-p[0], p[1], 0.0))) for p in pts]   # world (x, z) → Blender (-x, z, 0)
     # keep the face pointing up: Newell normal z must be > 0
     nz = 0.0
@@ -94,6 +96,7 @@ objs = []
 objs = []
 for mat, bm in BM.items():
     me = bpy.data.meshes.new("RingWater__" + mat)
+    if ONE: bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.01)
     bm.to_mesh(me); bm.free()
     me.materials.append(MATS[mat])
     ob = bpy.data.objects.new("RingWater__" + mat, me)
@@ -104,4 +107,4 @@ for mat, bm in BM.items():
 bpy.ops.object.select_all(action='DESELECT')
 for ob in objs:
     ob.select_set(True)
-bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, "RingWater.glb"), export_format='GLB', use_selection=True, export_apply=True, export_yup=True)
+bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, "RingWater" + ("_One" if ONE else "") + ".glb"), export_format='GLB', use_selection=True, export_apply=True, export_yup=True)

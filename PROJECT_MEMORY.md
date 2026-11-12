@@ -3106,3 +3106,7 @@ Backups: `ServerStorage._IslandV5_Parked` (v4 pieces replaced in v5: SeaMask_v4,
 ## fence-blockers-real-height (2026-11-12)
 - ผู้ใช้อยากให้กระโดดข้ามรั้วได้: กำแพงล่องหนทะเลสาบ (`LakeSurround` Fence8/Blocker) = 3.85 = เท่ารั้วไม้, ราวสะพาน (`StreamDecor.Bridges.*.Collision.RailBlocker`) = 4.6 จากพื้นสะพาน. แทนกฎเดิม "RailBlocker 12 กันกระโดดข้าม". RailBlocker เอียงตามโค้ง → ย่อตามแกนขึ้นของชิ้น ไม่ใช่แกน Y โลก.
 - ทดสอบกระโดดด้วยสคริปต์ฝั่ง Client: ใช้ `hum:ChangeState(Jumping)` (`hum.Jump = true` บางทีไม่กระโดด) และรอ ~2.5 วิหลังวาร์ปไปที่ไกล (แมพยังโหลดไม่เสร็จ ตัวละครไม่ขยับ).
+
+## hotbar-bag-seeds-rejoin (2026-11-12)
+- HotbarLayout เซฟแค่ key ของ 6 ช่อง ไม่มี "อยู่กระเป๋า" → หลังเข้าใหม่ remembered ของของในกระเป๋า = nil จนจบรอบแรกหลัง join. แก้ด้วย `presentAtJoin` ใน HotbarState (เมล็ดที่มีตั้งแต่เข้าเกม + ไม่อยู่ในช่องที่เซฟ = อยู่กระเป๋า).
+- ทดสอบ HotbarState นอก Play ได้: ใน Edit `loadstring` สำเนา Source แทน `Players.LocalPlayer` ด้วยผู้เล่นปลอม (GetAttribute/CharacterAdded/WaitForChild) — Client ใช้ loadstring ไม่ได้, และใน Play อย่าให้สำเนาเรียก HotbarLayoutSave (จะเซฟทับช่องจริง).
