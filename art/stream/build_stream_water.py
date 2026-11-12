@@ -8,6 +8,8 @@ import bpy, bmesh, math, sys, os
 from mathutils import Vector
 
 OUT = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else os.path.dirname(os.path.abspath(__file__))
+# 2026-11-12: "onesheet" after <outdir> = every band in one welded mesh (Water_Mid) -> <Name>_One.glb. Separate band MeshParts left dotted dark seams in Roblox.
+ONE = "onesheet" in sys.argv
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o, do_unlink=True)
 
@@ -47,7 +49,7 @@ samples.append(P[-1]); widths.append(HW[-1] - INSET)
 
 BM = {}
 def face(mat, pts):
-    bm = BM.setdefault(mat, bmesh.new())
+    bm = BM.setdefault("Water_Mid" if ONE else mat, bmesh.new())
     vs = [bm.verts.new(Vector((-p[0], p[1], 0.0))) for p in pts]   # world (x, z) → Blender (-x, z, 0)
     # keep the face pointing up: Newell normal z must be > 0
     nz = 0.0
@@ -97,6 +99,7 @@ for k in range(segs):
 objs = []
 for mat, bm in BM.items():
     me = bpy.data.meshes.new("StreamWater__" + mat)
+    if ONE: bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.01)
     bm.to_mesh(me); bm.free()
     me.materials.append(MATS[mat])
     ob = bpy.data.objects.new("StreamWater__" + mat, me)
@@ -108,7 +111,7 @@ for mat, bm in BM.items():
 bpy.ops.object.select_all(action='DESELECT')
 for ob in objs:
     ob.select_set(True)
-bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, "StreamWater.glb"), export_format='GLB', use_selection=True, export_apply=True, export_yup=True)
+bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, "StreamWater" + ("_One" if ONE else "") + ".glb"), export_format='GLB', use_selection=True, export_apply=True, export_yup=True)
 
 scn = bpy.context.scene
 scn.render.engine = 'BLENDER_WORKBENCH'
@@ -130,7 +133,7 @@ POOL_C = Vector((425.0, -5.0))
 POOL = [(471.5,-5.0), (470.3,-1.0), (477.7,4.3), (475.7,8.6), (474.3,13.0), (471.7,16.8), (467.9,19.8), (466.4,24.0), (466.0,29.4), (463.5,33.5), (461.3,38.3), (458.6,42.9), (455.8,48.3), (451.8,52.6), (446.7,54.7), (441.7,57.3), (436.5,60.5), (431.4,68.2), (425.0,75.5), (417.4,82.2), (409.8,81.2), (402.1,80.5), (394.7,78.2), (387.6,75.2), (380.8,71.6), (374.2,67.5), (368.1,62.8), (362.4,57.6), (357.2,51.9), (352.5,45.8), (366.5,28.8), (379.2,16.3), (391.6,7.1), (394.6,3.2), (393.0,0.6), (381.7,-1.2), (381.5,-5.0), (381.7,-8.8), (381.2,-12.7), (381.1,-16.8), (381.3,-20.9), (381.0,-25.5), (381.3,-30.2), (352.5,-55.8), (357.2,-61.9), (371.6,-58.4), (382.3,-55.9), (386.3,-60.3), (388.2,-68.7), (391.4,-77.1), (395.4,-86.3), (402.1,-90.5), (409.6,-92.2), (417.3,-93.2), (425.0,-93.5), (432.0,-85.2), (437.2,-74.4), (441.4,-66.3), (446.7,-64.7), (451.0,-60.7), (454.8,-56.5), (458.6,-52.9), (460.0,-46.7), (462.8,-42.8), (465.2,-38.7), (466.4,-34.0), (467.0,-29.2), (469.9,-25.9), (473.4,-22.6), (474.7,-18.3), (477.7,-14.3), (477.3,-9.6)]
 BM2 = {}
 def face2(mat, pts):
-    bm = BM2.setdefault(mat, bmesh.new())
+    bm = BM2.setdefault("Water_Mid" if ONE else mat, bmesh.new())
     vs = [bm.verts.new(Vector((-p[0], p[1], 0.0))) for p in pts]
     nz = 0.0
     for a in range(len(vs)):
@@ -151,6 +154,7 @@ for i in range(len(PP)):
 objs2 = []
 for mat, bm in BM2.items():
     me = bpy.data.meshes.new("PoolWater__" + mat)
+    if ONE: bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.01)
     bm.to_mesh(me); bm.free()
     me.materials.append(MATS[mat])
     ob = bpy.data.objects.new("PoolWater__" + mat, me)
@@ -159,9 +163,9 @@ for mat, bm in BM2.items():
     xs = [v.co.x for v in me.vertices]; ys = [v.co.y for v in me.vertices]
     print("CENTRE", "Pool_" + mat, round(-(min(xs) + max(xs)) / 2, 3), round((min(ys) + max(ys)) / 2, 3), "SIZE", round(max(xs) - min(xs), 2), round(max(ys) - min(ys), 2))
 bpy.ops.object.select_all(action='DESELECT')
-for ob in objs + objs2:
+for ob in (objs + objs2) if not ONE else []:
     ob.select_set(True)
-bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, "StreamWater.glb"), export_format='GLB', use_selection=True, export_apply=True, export_yup=True)
+if not ONE: bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, "StreamWater" + ("_One" if ONE else "") + ".glb"), export_format='GLB', use_selection=True, export_apply=True, export_yup=True)
 cam.location = (-260, 40, 300)
 scn.render.filepath = os.path.join(OUT, "preview_water.png")
 bpy.ops.render.render(write_still=True)
