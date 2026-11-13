@@ -240,12 +240,16 @@ for i in range(-3, 4):
 box("Post_Dark", (FL * 2 + 0.14, 0.14, 0.26), (0, FL, DECK_TOP + 0.13)); box("Post_Dark", (FL * 2 + 0.14, 0.14, 0.26), (0, -FL, DECK_TOP + 0.13))
 box("Post_Dark", (0.14, FL * 2 + 0.14, 0.26), (FL, 0, DECK_TOP + 0.13)); box("Post_Dark", (0.14, FL * 2 + 0.14, 0.26), (-FL, 0, DECK_TOP + 0.13))
 # posts
-PX, POST_H = 2.45, 4.7
+# 2026-11-13 (user: the roof sat on the character's head; "bigger, +10% more"): the whole pavilion is scaled by
+# PAV_SCALE at export and the posts are longer. Sizes below are BEFORE the scale. Final head room under the
+# beams = POST_H * PAV_SCALE = 8.25 studs (was 4.7); lantern bottoms 6.5 above the floor (was 3.0).
+PAV_SCALE = 1.375
+PX, POST_H = 2.45, 6.0
 Z0 = DECK_TOP + 0.22
 for sx in (-1, 1):
     for sy in (-1, 1):
         x, y = sx * PX, sy * PX
-        cyl("Post", 0.2, 0.18, POST_H, (x, y, Z0 + POST_H / 2), seg=10)
+        cyl("Post", 0.22, 0.2, POST_H, (x, y, Z0 + POST_H / 2), seg=10)
         cyl("Gold", 0.3, 0.24, 0.26, (x, y, Z0 + 0.13), seg=10)
         cyl("Gold", 0.24, 0.3, 0.24, (x, y, Z0 + POST_H - 0.12), seg=10)
 # railings: back and both sides (front open)
@@ -258,7 +262,7 @@ def rail(p0, p1):
         cyl("Gold", 0.05, 0.05, 0.55, (p.x, p.y, Z0 + 0.78), seg=6)
 rail((-PX, PX, 0), (PX, PX, 0)); rail((-PX, -PX, 0), (-PX, PX, 0)); rail((PX, -PX, 0), (PX, PX, 0))
 # bench at the back with cushions (2 seats, facing -Y)
-BENCH_Y, BENCH_TOP = 1.45, Z0 + 1.25
+BENCH_Y, BENCH_TOP = 1.45, Z0 + 1.25 / PAV_SCALE  # the bench keeps its real height (1.25 studs) after the scale
 box("Post", (4.2, 1.3, 0.16), (0, BENCH_Y, BENCH_TOP - 0.2))
 for sx in (-1, 1):
     box("Post_Dark", (0.2, 1.1, BENCH_TOP - 0.28 - Z0), (sx * 1.85, BENCH_Y, Z0 + (BENCH_TOP - 0.28 - Z0) / 2))
@@ -352,6 +356,8 @@ for (x, y) in ((-2.9, 2.2), (2.9, 2.2), (-3.2, -1.2), (3.2, -1.2)):
 by_model = {}
 for (model, mat), bm in BM.items():
     me = bpy.data.meshes.new(model + "__" + mat)
+    if model == "KrathongPavilion":
+        bm.transform(Matrix.Scale(PAV_SCALE, 4))
     bm.to_mesh(me)
     bm.free()
     me.materials.append(MATS[mat])
