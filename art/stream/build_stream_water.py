@@ -108,6 +108,10 @@ for mat, bm in BM.items():
     xs = [v.co.x for v in me.vertices]; ys = [v.co.y for v in me.vertices]
     print("CENTRE", mat, round(-(min(xs) + max(xs)) / 2, 3), round((min(ys) + max(ys)) / 2, 3),
           "SIZE", round(max(xs) - min(xs), 2), round(max(ys) - min(ys), 2), "FACES", len(me.polygons))
+if ONE:  # 2026-11-12: cut away what lies inside the waterfall pool (no double sheets in front of the waterfall)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import water_clip
+    water_clip.clip_all(objs, os.path.dirname(os.path.abspath(__file__)))
 bpy.ops.object.select_all(action='DESELECT')
 for ob in objs:
     ob.select_set(True)
