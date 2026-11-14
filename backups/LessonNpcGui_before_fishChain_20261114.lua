@@ -1,0 +1,490 @@
+-- BACKUP 2026-11-14 — StarterPlayer.StarterPlayerScripts.LessonNpcGui (LocalScript) ก่อนทำบทตกปลาเป็นนำทางต่อกัน น้ำ → ตกได้ → ร้านตกปลา (หลังขยายตัวหนังสือแล้ว)
+-- วิธีคืน: ใน Studio เปิด StarterPlayer.StarterPlayerScripts.LessonNpcGui แล้ววาง Source ด้านล่างนี้ทับทั้งหมด (ลบ 2 บรรทัดคอมเมนต์นี้ออกก็ได้)
+-- LessonNpcGui (2026-11-13 ผู้ใช้ขอ ช่วงที่ 1): NPC "ครูฟาร์ม" (Workspace.GuideNPC) บอกวิธีเล่นเรื่องต่างๆ
+-- กดคุย (ProximityPrompt GuideNPC...TalkPrompt) = เปิดหน้าต่างบทเรียน: แต่ละหัวข้อมีวิธีเล่น 3 ข้อ + ปุ่ม "พาไป" (เส้นทองนำทางของ NewPlayerGuide ผ่าน NewPlayerGuideGui.GuideTo)
+-- ช่วงที่ 2 (วันเดียวกัน): รางวัลเหรียญต่อบทเรียน · เซิร์ฟเวอร์ (ServerScriptService.LessonService) ยืนยันว่าทำแล้วและตั้ง Attribute บนผู้เล่น Lesson_<id> = 0 ยังไม่ทำ / 1 รอรับ / 2 รับแล้ว
+--   หน้าต่างนี้แค่แสดงสถานะและส่งคำขอรับรางวัล (RemoteFunction LessonRequest "claim") จำนวนเหรียญอ่านจาก ReplicatedStorage.LessonConfig · LessonConfig ปิด/ไม่มี = หน้าต่างข้อมูลเฉยๆ แบบช่วงที่ 1
+--   ปุ่มของแต่ละการ์ด: ยังไม่ทำ/รับแล้ว = "พาไป" (หรือ "เริ่มนำทาง" ของบท ปลูก เก็บ ขาย) · รอรับ = ปุ่มทอง "รับรางวัล"
+-- เพิ่มหัวข้อ: เติมใน LESSONS และใส่ getPos (คืน Vector3 ของจุดที่จะพาไป หรือ nil = ซ่อนปุ่มพาไป) · available() คืน false = ไม่แสดงหัวข้อนั้น
+-- ป้ายเหนือหัว NPC: ชื่อ + "!" สีทอง จนกว่าจะคุยครั้งแรกในรอบที่เล่นนั้น และขึ้นอีกทุกครั้งที่มีรางวัลรอรับ (BillboardGui ต้องอยู่ใน PlayerGui + Adornee · AlwaysOnTop = false ตามเกร็ดบทเรียนเดิม)
+-- 2026-11-14: ข้อมูลบทเรียนย้ายไป ReplicatedStorage.LessonContent · แผง "?" สั่งทำบทเรียนด้วย BindableEvent LessonNpcGui.RunLesson(id)
+-- เมนูอื่นเปิดได้ด้วย BindableEvent LessonNpcGui.OpenLessons · จอย: เปิดแล้วเลือกปุ่มพาไปอันแรกให้ · B ปิด
+-- 2026-11-14 (ผู้ใช้สั่ง "ขยายตัวหนังสือ"): วิธีเล่นในการ์ด 13 -> 16 px · การ์ดสูงตามข้อความ (TextService) · การ์ดอยู่ในรายการเลื่อน (List)
+--   หน้าต่างย่อตามความกว้างจออย่างเดียว (เดิมย่อตามความสูงด้วย จอเตี้ยตัวหนังสือเหลือ ~10 px) · จอเตี้ยไม่พอ = หน้าต่างเตี้ยลงแล้วเลื่อนดูการ์ดได้
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
+local TextService = game:GetService("TextService")
+
+local Localization = require(ReplicatedStorage:WaitForChild("Localization"))
+-- รางวัล (ช่วงที่ 2): ไม่มีโมดูล/ปิดอยู่ = ไม่แสดงรางวัล
+local LessonConfig
+do
+	local module = ReplicatedStorage:WaitForChild("LessonConfig", 10)
+	local ok, result = pcall(function() return module and require(module) end)
+	if ok and type(result) == "table" and result.ENABLED then LessonConfig = result end
+end
+-- สถานะรอรับ/รับแล้ว: LessonConfig ปิด/ไม่มี = ค่าที่ไม่มีวันตรง (lessonReward คืน nil อยู่แล้ว) กันอ้าง LessonConfig ที่เป็น nil
+local STATE_READY = LessonConfig and LessonConfig.READY or -1
+local STATE_CLAIMED = LessonConfig and LessonConfig.CLAIMED or -2
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local function tr(th, en)
+	return Localization.Pick(Localization.GetLanguage(player), th, en)
+end
+
+local COLOR_BG = Color3.fromRGB(255, 250, 245)
+local COLOR_CARD = Color3.fromRGB(255, 240, 225)
+local COLOR_TEXT = Color3.fromRGB(80, 50, 40)
+local COLOR_SUB = Color3.fromRGB(130, 100, 90)
+local COLOR_BORDER = Color3.fromRGB(140, 100, 65)
+local COLOR_GOLD = Color3.fromRGB(255, 205, 80)
+local COLOR_GO = Color3.fromRGB(0, 176, 111)
+
+local NPC_NAME_TH, NPC_NAME_EN = "ครูฟาร์ม", "Farm Teacher"
+
+local function rootPart()
+	return player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- บทเรียน (ชื่อ วิธีเล่น จุดพาไป) อยู่ที่ ReplicatedStorage.LessonContent ใช้ร่วมกับแผง "?" (HowToPlayGui) · 2026-11-14 ย้ายมาจากตาราง LESSONS ในสคริปต์นี้
+local LessonContent = require(ReplicatedStorage:WaitForChild("LessonContent"))
+local LESSONS = LessonContent.LESSONS
+
+local function corner(obj, r) local c = Instance.new("UICorner"); c.CornerRadius = r and UDim.new(0, r) or UDim.new(1, 0); c.Parent = obj; return c end
+
+-- ============ หน้าต่างบทเรียน ============
+local gui = Instance.new("ScreenGui")
+gui.Name = "LessonNpcGui"
+gui.ResetOnSpawn = false
+gui.DisplayOrder = 12
+gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+gui.Enabled = false
+gui.Parent = playerGui
+
+local WIDTH = 430
+local HEADER = 52 -- หัวหน้าต่าง (ชื่อ + ปุ่ม X) เหนือรายการการ์ด
+local LINES_TOP = 44 -- วิธีเล่นเริ่มใต้ชื่อบทเรียน/ปุ่มในการ์ด
+local LINES_TEXT_SIZE = 16
+local LINES_LINE_HEIGHT = 1.15
+local LINES_WIDTH = WIDTH - 20 - 24 - 8 -- การ์ดกว้างหน้าต่าง -20 · ข้อความ -24 · เผื่อแถบเลื่อน 8
+local CARD_MIN_HEIGHT = 96
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.AnchorPoint = Vector2.new(0.5, 0.5)
+main.Position = UDim2.new(0.5, 0, 0.5, 24)
+main.BackgroundColor3 = COLOR_BG
+main.Active = true
+main.SelectionGroup = true
+main.Parent = gui
+corner(main, 18)
+do
+	local st = Instance.new("UIStroke"); st.Color = COLOR_BORDER; st.Thickness = 3; st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; st.Parent = main
+end
+local uiScale = Instance.new("UIScale")
+uiScale.Parent = main
+
+-- รายการการ์ด: เลื่อนขึ้นลงได้เมื่อจอเตี้ยกว่าหน้าต่าง
+local list = Instance.new("ScrollingFrame")
+list.Name = "List"
+list.BackgroundTransparency = 1
+list.BorderSizePixel = 0
+list.Position = UDim2.fromOffset(0, HEADER)
+list.Size = UDim2.new(1, 0, 1, -HEADER - 4)
+list.ScrollingDirection = Enum.ScrollingDirection.Y
+list.ScrollBarThickness = 6
+list.ScrollBarImageColor3 = COLOR_BORDER
+list.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+list.CanvasSize = UDim2.new()
+list.Selectable = false
+list.Parent = main
+
+local title = Instance.new("TextLabel")
+title.BackgroundTransparency = 1
+title.Position = UDim2.new(0, 16, 0, 8)
+title.Size = UDim2.new(1, -70, 0, 36)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 19
+title.TextColor3 = COLOR_TEXT
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.TextTruncate = Enum.TextTruncate.AtEnd
+title.Parent = main
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "Close"
+closeButton.AnchorPoint = Vector2.new(1, 0)
+closeButton.Position = UDim2.new(1, -8, 0, 6)
+closeButton.Size = UDim2.fromOffset(40, 40)
+closeButton.BackgroundColor3 = Color3.fromRGB(235, 100, 100)
+closeButton.Text = "X"
+closeButton.TextSize = 18
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.Selectable = true
+closeButton.Parent = main
+corner(closeButton)
+
+-- สถานะรางวัลของบทเรียน (จาก Attribute ที่เซิร์ฟเวอร์ตั้ง) คืน (สถานะ, จำนวนเหรียญ) · ไม่มีรางวัล = nil
+local function lessonReward(id)
+	local coins = LessonConfig and LessonConfig.Rewards[id]
+	if not coins or player:GetAttribute("LessonsLoaded") ~= true then return nil end
+	return tonumber(player:GetAttribute("Lesson_" .. id)) or LessonConfig.TODO, coins
+end
+local function formatCoins(n)
+	local s = tostring(math.floor(n))
+	local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+	return (out:gsub("^,", ""))
+end
+
+local close -- ประกาศก่อน นิยามด้านล่าง (ปุ่มพาไปเรียกใช้)
+local layout -- เช่นกัน (ปุ่มรับรางวัลเรียกใช้หลังเซิร์ฟเวอร์ตอบ)
+local claimBusy = false
+local catchGuide -- { lesson, title } นำทางตกปลาที่กดพาไปล่าสุด รอปลาตัวแรก (ดูท้ายส่วนหน้าต่าง)
+
+-- ทำบทเรียน (ปุ่มเริ่มนำทาง/พาไป ของการ์ด และแผง "?" ผ่าน RunLesson): ปิดหน้าต่างแล้วเริ่มนำทาง
+local function runLesson(lesson)
+	local guide = playerGui:FindFirstChild("NewPlayerGuideGui")
+	if lesson.startGuide then
+		close()
+		local ev = guide and guide:FindFirstChild("StartGuide")
+		if ev then ev:Fire() end
+		return
+	end
+	local pos = lesson.getPos and lesson.getPos()
+	if not pos then return end
+	close()
+	local ev = guide and guide:FindFirstChild("GuideTo")
+	if ev then
+		ev:Fire({
+			pos = pos,
+			title = tr(NPC_NAME_TH, NPC_NAME_EN) .. ": " .. tr(lesson.th, lesson.en),
+			text = tr(lesson.guideTh, lesson.guideEn),
+			mark = tr(lesson.markTh, lesson.markEn),
+			arriveDist = lesson.arriveDist,
+			doneText = tr(lesson.doneTh, lesson.doneEn),
+		})
+		if lesson.endOnCatch then
+			catchGuide = { lesson = lesson, title = tr(NPC_NAME_TH, NPC_NAME_EN) .. ": " .. tr(lesson.th, lesson.en) }
+		end
+	end
+end
+
+-- นำทางไปหาครูฟาร์ม (แถวครูฟาร์มในแผง "?")
+local function guideToTeacher()
+	local pos = LessonContent.TeacherPos()
+	if not pos then return end
+	close()
+	local t = LessonContent.TEACHER
+	local guide = playerGui:FindFirstChild("NewPlayerGuideGui")
+	local ev = guide and guide:FindFirstChild("GuideTo")
+	if ev then
+		ev:Fire({
+			pos = pos,
+			title = tr(t.th, t.en),
+			text = tr(t.guideTh, t.guideEn),
+			mark = tr(t.th, t.en),
+			arriveDist = t.arriveDist,
+			doneText = tr(t.doneTh, t.doneEn),
+		})
+	end
+end
+local cards = {} -- { { lesson, frame, name, lines, go } }
+for _, lesson in ipairs(LESSONS) do
+	local card = Instance.new("Frame")
+	card.Name = "Lesson_" .. lesson.id
+	card.Size = UDim2.new(1, -20, 0, CARD_MIN_HEIGHT)
+	card.BackgroundColor3 = COLOR_CARD
+	card.Parent = list
+	corner(card, 10)
+
+	local icon = Instance.new("TextLabel")
+	icon.BackgroundTransparency = 1
+	icon.Position = UDim2.new(0, 8, 0, 4)
+	icon.Size = UDim2.fromOffset(30, 28)
+	icon.Text = lesson.icon
+	icon.TextSize = 22
+	icon.Font = Enum.Font.GothamBold
+	icon.TextColor3 = COLOR_TEXT
+	icon.Parent = card
+
+	local name = Instance.new("TextLabel")
+	name.BackgroundTransparency = 1
+	name.Position = UDim2.new(0, 44, 0, 4)
+	name.Size = UDim2.new(1, -150, 0, 28)
+	name.Font = Enum.Font.GothamBold
+	name.TextSize = 17
+	name.TextColor3 = COLOR_TEXT
+	name.TextXAlignment = Enum.TextXAlignment.Left
+	name.Parent = card
+
+	local go = Instance.new("TextButton")
+	go.Name = "Go"
+	go.AnchorPoint = Vector2.new(1, 0)
+	go.Position = UDim2.new(1, -8, 0, 6)
+	go.Size = UDim2.fromOffset(92, 36)
+	go.BackgroundColor3 = COLOR_GO
+	go.Font = Enum.Font.GothamBold
+	go.TextSize = 15
+	go.TextColor3 = Color3.new(1, 1, 1)
+	go.Selectable = true
+	go.Parent = card
+	corner(go, 10)
+
+	local lines = Instance.new("TextLabel")
+	lines.Name = "Lines"
+	lines.BackgroundTransparency = 1
+	lines.Position = UDim2.new(0, 12, 0, LINES_TOP)
+	lines.Size = UDim2.new(1, -24, 1, -LINES_TOP - 2)
+	lines.Font = Enum.Font.Gotham
+	lines.TextSize = LINES_TEXT_SIZE
+	lines.LineHeight = LINES_LINE_HEIGHT
+	lines.TextColor3 = COLOR_SUB
+	lines.TextXAlignment = Enum.TextXAlignment.Left
+	lines.TextYAlignment = Enum.TextYAlignment.Top
+	lines.TextWrapped = true
+	lines.Parent = card
+
+	go.Activated:Connect(function()
+		-- รอรับรางวัล = ปุ่มนี้คือ "รับรางวัล": ขอเซิร์ฟเวอร์ แล้ววาดหน้าต่างใหม่ตามสถานะล่าสุด (เซิร์ฟเวอร์แจ้งผลเอง)
+		local state = lessonReward(lesson.id)
+		if state == STATE_READY then
+			if claimBusy then return end
+			local request = ReplicatedStorage:FindFirstChild("RemoteEvents") and ReplicatedStorage.RemoteEvents:FindFirstChild("LessonRequest")
+			if not request then return end
+			claimBusy = true
+			go.Text = "..."
+			task.spawn(function()
+				pcall(function() request:InvokeServer("claim", lesson.id) end)
+				claimBusy = false
+				if gui.Enabled then layout() end
+			end)
+			return
+		end
+		runLesson(lesson)
+	end)
+
+	table.insert(cards, { lesson = lesson, frame = card, name = name, lines = lines, go = go })
+end
+
+-- ตกปลาได้ระหว่างนำทางตกปลา: จบการนำทางด้วย GuideTo ที่ตำแหน่งตัวเอง (ถึงทันที แสดงข้อความแล้วการ์ดหายเอง)
+-- เฉพาะตอนการ์ดนำทางยังเป็นของบทตกปลาอยู่ (หัวการ์ดตรงกัน) · กด X หรือมีนำทางอื่นแทนแล้ว = ไม่ยุ่ง
+task.spawn(function()
+	local remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
+	local fishingState = remotes:WaitForChild("FishingState", 120)
+	if not fishingState then return end
+	fishingState.OnClientEvent:Connect(function(state)
+		if state ~= "caught" or not catchGuide then return end
+		local active = catchGuide
+		catchGuide = nil
+		local guide = playerGui:FindFirstChild("NewPlayerGuideGui")
+		local cardTitle = guide and guide:FindFirstChild("Card") and guide.Card:FindFirstChild("Title")
+		local ev = guide and guide:FindFirstChild("GuideTo")
+		local root = rootPart()
+		if not (ev and root and guide.Enabled and cardTitle and cardTitle.Text == active.title) then return end
+		ev:Fire({
+			pos = root.Position,
+			title = active.title,
+			text = "",
+			mark = "",
+			arriveDist = 1e6,
+			doneText = tr(active.lesson.catchTh, active.lesson.catchEn),
+		})
+	end)
+end)
+
+-- ความสูงของวิธีเล่น (หลายบรรทัด ตัดคำตามความกว้างการ์ด) · GetTextSize ไม่คิด LineHeight จึงคูณเอง
+local function linesHeight(text)
+	local ok, size = pcall(function()
+		return TextService:GetTextSize(text, LINES_TEXT_SIZE, Enum.Font.Gotham, Vector2.new(LINES_WIDTH, 10000))
+	end)
+	if not ok then return LINES_TEXT_SIZE * 3 * LINES_LINE_HEIGHT end
+	return math.ceil(size.Y * LINES_LINE_HEIGHT)
+end
+
+-- จัดหน้าต่างทุกครั้งที่เปิด: ภาษาปัจจุบัน, หัวข้อที่เปิดอยู่, การ์ดสูงตามข้อความ, ย่อตามความกว้างจอ, จอเตี้ย = เลื่อนรายการ
+local firstGo
+layout = function()
+	title.Text = tr(NPC_NAME_TH, NPC_NAME_EN) .. ": " .. tr("อยากรู้เรื่องไหน?", "pick a topic") -- สั้นไว้ ไม่ให้ชนปุ่ม X
+	local y = 0
+	firstGo = nil
+	for _, c in ipairs(cards) do
+		local show = c.lesson.available == nil or c.lesson.available() == true
+		c.frame.Visible = show
+		if show then
+			c.lines.Text = tr(c.lesson.thLines, c.lesson.enLines)
+			local cardHeight = math.max(CARD_MIN_HEIGHT, LINES_TOP + linesHeight(c.lines.Text) + 4)
+			c.frame.Size = UDim2.new(1, -20, 0, cardHeight)
+			c.frame.Position = UDim2.new(0, 10, 0, y)
+			y += cardHeight + 6
+			-- ชื่อบทเรียน + รางวัล/สถานะในบรรทัดเดียวกัน · ปุ่มเปลี่ยนตามสถานะ
+			local state, coins = lessonReward(c.lesson.id)
+			local nameText = tr(c.lesson.th, c.lesson.en)
+			local canGo = c.lesson.getPos ~= nil or c.lesson.startGuide == true
+			if state == STATE_READY then
+				c.name.Text = nameText .. " · 💰 " .. formatCoins(coins)
+				c.go.Text = tr("รับรางวัล", "Claim")
+				c.go.BackgroundColor3 = COLOR_GOLD
+				c.go.TextColor3 = COLOR_TEXT
+				c.go.Visible = true
+			else
+				if state == STATE_CLAIMED then
+					c.name.Text = nameText .. " · ✅ " .. tr("รับแล้ว", "Claimed")
+				elseif state then
+					c.name.Text = nameText .. " · 💰 " .. formatCoins(coins)
+				else
+					c.name.Text = nameText
+				end
+				c.go.Text = c.lesson.startGuide and tr("เริ่มนำทาง", "Start") or tr("พาไป", "Take me")
+				c.go.BackgroundColor3 = COLOR_GO
+				c.go.TextColor3 = Color3.new(1, 1, 1)
+				c.go.Visible = canGo
+			end
+			if not firstGo and c.go.Visible then firstGo = c.go end
+		end
+	end
+	local content = math.max(y - 6, 0)
+	list.CanvasSize = UDim2.fromOffset(0, content)
+	local height = HEADER + content + 4 + 6
+	local camera = workspace.CurrentCamera
+	local vp = camera and camera.ViewportSize
+	if vp and vp.X > 2 then
+		-- ย่อตามความกว้างเท่านั้น (ตัวหนังสือไม่เล็กลงเพราะจอเตี้ย) · สูงเกินจอ = ตัดหน้าต่างให้พอดีแล้วเลื่อนรายการ
+		local scale = math.clamp((vp.X - 24) / WIDTH, 0.6, 1)
+		uiScale.Scale = scale
+		local maxHeight = math.max((vp.Y - 80) / scale, HEADER + 120)
+		height = math.min(height, maxHeight)
+	end
+	main.Size = UDim2.fromOffset(WIDTH, height)
+end
+
+-- ============ เปิด / ปิด ============
+local GAMEPAD_INPUTS = {
+	[Enum.UserInputType.Gamepad1] = true, [Enum.UserInputType.Gamepad2] = true,
+	[Enum.UserInputType.Gamepad3] = true, [Enum.UserInputType.Gamepad4] = true,
+}
+local talkedOnce = false
+local refreshHeadSign -- นิยามในหัวข้อ NPC
+close = function()
+	gui.Enabled = false
+	local sel = GuiService.SelectedObject
+	if sel and sel:IsDescendantOf(main) then GuiService.SelectedObject = nil end
+end
+local function open()
+	layout()
+	list.CanvasPosition = Vector2.zero
+	talkedOnce = true
+	if refreshHeadSign then refreshHeadSign() end
+	gui.Enabled = true
+	if GAMEPAD_INPUTS[UserInputService:GetLastInputType()] then
+		GuiService.SelectedObject = firstGo or closeButton
+	end
+end
+closeButton.Activated:Connect(close)
+UserInputService.InputBegan:Connect(function(input)
+	if input.KeyCode == Enum.KeyCode.ButtonB and gui.Enabled then close() end
+end)
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+	if gui.Enabled then layout() end
+end)
+
+local openEvent = Instance.new("BindableEvent")
+openEvent.Name = "OpenLessons"
+openEvent.Parent = gui
+openEvent.Event:Connect(open)
+
+-- แผง "?" (HowToPlayGui) สั่งทำบทเรียนผ่านที่นี่ (ทางเดียวกับปุ่มในหน้าต่างนี้): RunLesson:Fire(id) · id = "teacher" = นำทางไปหาครูฟาร์ม
+local runEvent = Instance.new("BindableEvent")
+runEvent.Name = "RunLesson"
+runEvent.Parent = gui
+runEvent.Event:Connect(function(id)
+	if id == "teacher" then guideToTeacher() return end
+	local lesson = LessonContent.Find(id)
+	if lesson and LessonContent.IsAvailable(lesson) then runLesson(lesson) end
+end)
+
+-- ============ NPC: ป้ายกดคุย + ป้ายเหนือหัว ============
+-- NPC อยู่ไกลอาจยังไม่ถูกสตรีมมา (StreamingEnabled) จึงรอแบบไม่จำกัดเวลาในเธรดแยก และตั้งค่าใหม่ทุกครั้งที่โมเดลโผล่กลับมา
+local headSign = Instance.new("BillboardGui")
+headSign.Name = "LessonNpcSign"
+headSign.Size = UDim2.fromOffset(200, 64)
+headSign.StudsOffsetWorldSpace = Vector3.new(0, 4.6, 0)
+headSign.AlwaysOnTop = false
+headSign.MaxDistance = 150
+headSign.ResetOnSpawn = false
+headSign.Enabled = false
+headSign.Parent = playerGui
+local signMark = Instance.new("TextLabel")
+signMark.Name = "Mark"
+signMark.BackgroundTransparency = 1
+signMark.Size = UDim2.new(1, 0, 0, 36)
+signMark.Font = Enum.Font.GothamBlack
+signMark.TextSize = 34
+signMark.Text = "!"
+signMark.TextColor3 = COLOR_GOLD
+signMark.TextStrokeColor3 = COLOR_TEXT
+signMark.TextStrokeTransparency = 0
+signMark.Parent = headSign
+local signName = Instance.new("TextLabel")
+signName.Name = "NpcName"
+signName.BackgroundTransparency = 1
+signName.Position = UDim2.new(0, 0, 0, 36)
+signName.Size = UDim2.new(1, 0, 0, 26)
+signName.Font = Enum.Font.GothamBold
+signName.TextSize = 18
+signName.TextColor3 = Color3.new(1, 1, 1)
+signName.TextStrokeColor3 = COLOR_TEXT
+signName.TextStrokeTransparency = 0
+signName.Parent = headSign
+
+refreshHeadSign = function()
+	local rewardWaiting = false
+	for _, lesson in ipairs(LESSONS) do
+		if lessonReward(lesson.id) == STATE_READY then rewardWaiting = true end
+	end
+	signMark.Visible = not talkedOnce or rewardWaiting
+	signName.Text = tr(NPC_NAME_TH, NPC_NAME_EN)
+end
+-- สถานะรางวัลเปลี่ยน (เซิร์ฟเวอร์ตั้ง Attribute): อัปเดต "!" เหนือหัว และหน้าต่างที่เปิดอยู่
+local function onLessonStateChanged()
+	refreshHeadSign()
+	if gui.Enabled and not claimBusy then layout() end
+end
+player:GetAttributeChangedSignal("LessonsLoaded"):Connect(onLessonStateChanged)
+for _, lesson in ipairs(LESSONS) do
+	player:GetAttributeChangedSignal("Lesson_" .. lesson.id):Connect(onLessonStateChanged)
+end
+
+local boundNpcs = setmetatable({}, { __mode = "k" }) -- กันผูกซ้ำ (เธรดรอ + ChildAdded อาจเจอโมเดลเดียวกัน)
+local function bindNpc(npc)
+	if boundNpcs[npc] then return end
+	boundNpcs[npc] = true
+	-- ป้ายคุยอยู่ในชิ้นส่วนของโมเดล (ไม่ใช่ลูกตรง) รอให้สตรีมมาถึงไม่เกิน 30 วิ
+	local prompt
+	local t0 = os.clock()
+	repeat
+		prompt = npc:FindFirstChild("TalkPrompt", true)
+		if not prompt then task.wait(0.5) end
+	until prompt or os.clock() - t0 > 30 or not npc.Parent
+	if not prompt or not prompt:IsA("ProximityPrompt") then
+		boundNpcs[npc] = nil
+		return
+	end
+	prompt.ActionText = tr("คุย", "Talk")
+	prompt.ObjectText = tr(NPC_NAME_TH, NPC_NAME_EN)
+	prompt.Triggered:Connect(open)
+	local part = prompt.Parent
+	if part and part:IsA("BasePart") then
+		headSign.Adornee = part
+		refreshHeadSign()
+		headSign.Enabled = true
+	end
+end
+task.spawn(function()
+	local npc = workspace:WaitForChild("GuideNPC")
+	bindNpc(npc)
+end)
+workspace.ChildAdded:Connect(function(child)
+	if child.Name == "GuideNPC" then task.defer(bindNpc, child) end
+end)
