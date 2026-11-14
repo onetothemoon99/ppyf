@@ -2171,6 +2171,7 @@ User 2026-10-11: wants Halloween decorations in the farm that can be turned on/o
 2026-10-14: Halloween decor now SOLID for 135 ground pieces (user asked "ไม่ให้เดินทะลุ"): CanCollide true + attribute HalloweenCollide; meshes Hull, Arch + PumpkinHouse PreciseConvexDecomposition; floating (SeasonBob), flat, small, and pieces inside beach FarmPlot55/58/59/61 stay pass-through. CanQuery still false. New decor pieces placed later need the same treatment.
 
 - 2026-10-18 Halloween night music: BackgroundMusic `SEASON_NIGHT.Halloween2026` = "Lanterns by the Harvest Gate" (91061903312421, uploaded by the user that day) plays alone on repeat when the season is active AND the player's time is Night (19:00-07:00 = the personal "ตอนค่ำ" preset; the server is day-only). Add other festivals' night songs to SEASON_NIGHT. Verified in Play. Not published.
+- 2026-11-14 music/ folder songs: Lanterns at Twilight (107388651538205), River of Woven Light (105205483732903), Sky Witches (70600257975520) uploaded under group 642396060 with open_cloud_invoke POST /assets/v1/assets (assetType Audio, creator groupId; approved within seconds) and added as PLAYLIST[10..12] to Day/Evening/Night. ใต้แสงกระทง = PLAYLIST[8], Khomloy Lanna = PLAYLIST[9] were already there. Studio only.
 
 - 2026-10-19 Halloween default time: PersonalTimeGui `SEASON_DEFAULT_TIME = { Halloween2026 = "evening" }` applies (not saved) when SavedPersonalTime == "" (never chose). "Follow game time" now saves "game" (GraphicsPrefs VALID_TIMES has game). Players who pressed follow-game-time before this update look like "never chose" and also get evening. Logic simulated, not Play-tested with a fresh account. Not published.
 - 2026-10-19: set taken OUT to `Workspace.Halloween2026` again (368 parts, anchors all 0 shift, AnchorCFrames reset) on "ย้ายออกมาที่ work space ก่อน แก้ไขแปป". The empty `ServerStorage.SeasonalDecor.Halloween2026` folder was destroyed — recreate it as a Model when putting back. MUST go back before any Publish.
@@ -3092,6 +3093,9 @@ Backups: `ServerStorage._IslandV5_Parked` (v4 pieces replaced in v5: SeaMask_v4,
 - Gotcha: when a script backup must be rebuilt, apply the session's exact replacements to an earlier backup with node and compare a byte checksum with Studio (`sum += byte * ((i % 7) + 1) mod 2^31-1`) instead of re-typing 70 KB.
 - Upload route that works: `open_cloud_invoke POST /assets/v1/assets` with `files` from `E:/work/ppyf/...`, creator `groupId 642396060`; a Decal upload gives a decal id — read the image id via `game:GetObjects(decal)[1].Texture`.
 
+
+## hang-lantern-life (checked 2026-11-15)
+- A hung lantern (โคมแขวน on a garden hook) stays **30 minutes**: `ReplicatedStorage.KrathongConfig.HANG_LIFE = 1800` s, then fades and frees the hook. Other values: `HANG_RANGE = 7` studs, `HANG_POSE = 2.6` s, `HANG_COOLDOWN = 4` s. Hanging also gives luck x1.3 for 10 min (`LanternLuckUntil`).
 ## platypus-dive-hold (2026-11-11)
 - ตุ่นนักอนุรักษ์ (PetId Platypus, ability `KrathongCollector`): งม = `WorkAnim` "dive" (PetAnimator โหมดใหม่ จม 1.1) → `KrathongGot` "t;5" (PlatypusFx ถือกระทง) → 5 วิ → เหรียญ + `KrathongCoin` (กระทงหาย). เหรียญจ่ายใน `task.delay` แม้เก็บสัตว์ระหว่างถือ.
 - แท่งเทียนในมือตุ่น = ชิ้น `CoinHeld` (ชื่อผิด) — PlatypusFx.setHolding ซ่อน/โชว์พร้อมกระทง (2026-11-12).
@@ -3132,3 +3136,5 @@ Backups: `ServerStorage._IslandV5_Parked` (v4 pieces replaced in v5: SeaMask_v4,
 - 2026-11-13: KrathongPavilion rebuilt bigger (`PAV_SCALE = 1.375`, POST_H 6.0 in build_seats.py; asset 102240291239874; 14.4 wide, 16.7 tall, 8.25 head room; seats at (±1.375, 2.34, 1.99)). Reason: roof sat on the character's head. For future seats with a roof: keep ≥ 8 studs from floor to the lowest beam. Gotcha: a just-inserted new mesh may not show in the first screen_capture — wait a few seconds and capture again.
 - 2026-11-13: furniture `SitPrompt` is hidden CLIENT-side while the local player is seated (block at the end of FurniturePlacer; the server only hides the occupied seat's prompt). Not Play-tested.
 - 2026-11-13: pavilion lanterns dimmed 20% (Lantern_Glow Neon 182,86,28; PointLight 0.72). When rebuilding the template from the GLB, use these values, not 228,108,36 / 0.9.
+- 2026-11-15: `NewSeats2026` turned ON in Studio (log + pavilion into the mount gacha; not published yet). Duck float moved to its own switch `SeasonConfig.DuckFloat2026` (OFF, not in DevForceSeason) by user order.
+- 2026-11-15: USER PUBLISHED (said so in chat) — log + pavilion live in the mount gacha, duck float held (DuckFloat2026 off). Not verified on a live server.
