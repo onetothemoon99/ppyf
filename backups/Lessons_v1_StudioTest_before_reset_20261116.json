@@ -1,0 +1,7 @@
+{
+  "_note": "Backup of DataStore Lessons_v1 Studio test keys before reset 2026-11-16. Restore: in Studio Edit, DataStoreService:GetDataStore('Lessons_v1'):SetAsync(key, value).",
+  "StudioTest_-1": {"freeTicket":true,"claimed":{"fish":true,"pet":true,"basic":true},"ready":{"fish":true,"pet":true,"basic":true}},
+  "StudioTest_-2": {"freeTicket":true,"claimed":{"chicken":true,"fish":true,"basic":true},"ready":{"chicken":true,"fish":true,"basic":true}},
+  "StudioTest_-3": {"freeTicket":true,"claimed":{"fish":true,"pet":true,"basic":true},"ready":{"fish":true,"pet":true,"basic":true}},
+  "StudioTest_9360333174": {"claimed":{"chicken":true,"fish":true,"basic":true},"ready":{"chicken":true,"fish":true,"basic":true}}
+}
