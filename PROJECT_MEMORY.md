@@ -54,6 +54,8 @@ Notes about this Roblox game so another machine does not have to re-read the cod
 - [Sound groups](sound-groups.md) — 4 volume sliders (music / EffectSounds / NatureSounds / Music Box); every new Sound must join a group; nature slider added 2026-10-11
 - [Cheat watch](cheat-watch.md) — CheatWatch flags (CheatFlags_v1, /flags, owner toast) + XP cap/lifetime check in LevelSystem (2026-10-11, not published); gacha audit: no result-picking hole, likely cheated coins + pity
 - [Streaming: atomic models](streaming-atomic-models.md) — StreamingEnabled: multi-part models need ModelStreamingMode Atomic or weak phones get them incomplete (pets fixed 2026-10-12, unconfirmed on device)
+- [Spawn stuck in terrain](spawn-stuck-in-terrain.md) — 2026-11-16 SpawnLocation was buried under the brick plaza; raised + SpawnUnstuck/SpawnGroundGuard safety nets, Play-tested, not published
+- [Warp stream first](warp-stream-first.md) — 2026-11-16 WarpService streams the destination before PivotTo (low-RAM devices could not press E / fish after warping); orchard thief warp + tutorial warp done too
 - [Server crash diagnosis](server-crash-diagnosis.md) — how to investigate a live server drop (DisconnectLogs_v1 scan + public Roblox APIs); incident 2026-10-13 03:49, cause unconfirmed
 - [Auto restart](auto-restart.md) — scheduled soft restart 01:00/09:00/17:00 via transit place (AutoRestart, RestartScheduleConfig, transit/RestartTransit.server.lua), built 2026-10-14, inactive until TransitPlaceId set, real teleport untested
 - [Admin commands](admin-give.md) — /give (coins/x100/x50/tickets, cross-server, AdminGrants_v1 queue+log) and /restart; owner-only, 2026-10-10, not play-tested
@@ -1268,7 +1270,9 @@ How it works:
 
 Done in phase 1 (client text + server notices): MoreMenuGui, WarpGui/WarpService/WarpConfig, EmoteGui (emote names were already English), PlayerClickMenu, CarryClient/CarryService/CarryConfig, PhotoModeGui, FishingClient, FishingShopGui, FishIndexGui, FishingSystem (notices, announce fish name), FishingShop (messages), FullInventoryGui (rod short name, junk, star notice), CustomHotbar (rod short name), AfkRejoinClient, TutorialGui, PromptLocalizer. Backups `_Backup_20261003.<Script>_before_i18n` exist for 11 of them (not for the later ones).
 
-NOT yet translated (still Thai): GachaGui/GachaService/GachaAnnouncer/GachaShowcaseClient, PetHelperToggleButton (pet menu), PetFoodGui, AutoFeederGui, VipGui/VipService/VipConfig, SultanShopGui, ActivePetsHud, PlantLimitGui, DonationGui partly, PetHungerClient ("หิวจนไม่ทำงาน"), pet names (PetDefinitions DisplayName), TutorialService/AfkRejoin server notices, LevelSystem notices, TypingReporter, WeatherClient/Config texts, MusicPlayer names, GraphicsGui (already has Localization keys), leaderstat names ("เหรียญ" etc. fixed Thai), Roblox game name/description (store page, not code).
+NOT yet translated (still Thai): GachaGui/GachaService/GachaAnnouncer/GachaShowcaseClient, PetHelperToggleButton (pet menu), AutoFeederGui, VipGui/VipService/VipConfig, SultanShopGui, ActivePetsHud, PlantLimitGui, DonationGui partly, PetHungerClient ("หิวจนไม่ทำงาน"), pet names (PetDefinitions DisplayName), TutorialService/AfkRejoin server notices, LevelSystem notices, TypingReporter, WeatherClient/Config texts, MusicPlayer names, GraphicsGui (already has Localization keys), leaderstat names ("เหรียญ" etc. fixed Thai), Roblox game name/description (store page, not code).
+
+2026-11-16: pet food machine done (PetFoodGui `tr()`, PetFoodConverter `L(player, th, en)` for messages + toasts; recipe label TextScaled). Studio only.
 
 Tested in Play with DevForceLang = "en": all phase-1 GUIs show English, prompts translated, no errors in the client/server logs, fish/bait/rod tool names English. NOT tested: a real English-locale account, server notices triggered by real actions (warp cooldown, carry requests…), phone layout (English strings are longer: check cards/buttons for overflow on phones).
 
@@ -3141,3 +3145,13 @@ Backups: `ServerStorage._IslandV5_Parked` (v4 pieces replaced in v5: SeaMask_v4,
 - 2026-11-13: pavilion lanterns dimmed 20% (Lantern_Glow Neon 182,86,28; PointLight 0.72). When rebuilding the template from the GLB, use these values, not 228,108,36 / 0.9.
 - 2026-11-15: `NewSeats2026` turned ON in Studio (log + pavilion into the mount gacha; not published yet). Duck float moved to its own switch `SeasonConfig.DuckFloat2026` (OFF, not in DevForceSeason) by user order.
 - 2026-11-15: USER PUBLISHED (said so in chat) — log + pavilion live in the mount gacha, duck float held (DuckFloat2026 off). Not verified on a live server.
+
+## spawn-stuck-in-terrain (2026-11-16, Studio only)
+- Report: on slow devices the camera ends up inside the brick plaza (the character is stuck in the terrain). Cause: `Workspace.SpawnLocation` was at y 1.9, under the brick terrain surface at y 4. Raised to y 3.5 (top flush with the plaza) and made invisible. Whenever the spawn part or the plaza terrain moves, check that the part's top = the terrain surface (raycast at 4.00).
+- Safety nets: `ServerScriptService.SpawnUnstuck` (every 1 s; a solid voxel at the root + terrain surface > root + 0.5 → PivotTo onto the surface) and `StarterPlayerScripts.SpawnGroundGuard` (local anchor until there is ground within 30 studs below, max 10 s; the same lift for the first 20 s). Also: root below y 0 with nothing below (falling under the map) counts as stuck. Play test 2026-11-16: server lift ~1.5 s, client lift ~0.5 s. Not seen on a phone; Studio cannot slow the stream to test the anchor wait.
+- Backup of the old part: `backups/SpawnLocation_before_raise_20261116.rbxm` (the parked copy in ServerStorage has been deleted).
+
+## warp-stream-first (2026-11-16, Studio only)
+- Report: on low-spec / low-RAM devices, after a warp the E prompts (incubator) and fishing don't work "until the pets arrive". Cause: WarpService did PivotTo without streaming; PauseOutsideLoadedArea freezes the client until the area loads, and pets (server-leashed at 120 studs) show up at the same moment.
+- Fix: WarpService does `RequestStreamAroundAsync(pos, 6)` BEFORE moving (player waits in place; "🧭 กำลังไป…" after 0.4 s). Any new far teleport should do the same. `RequestStreamAroundAsync` can also be called from the client.
+- Same fix added 2026-11-16 to `OrchardService.warpToKeeper` and `TutorialGui.warpTo`. Option 3 (StreamingTargetRadius 1024 → ~512) waits for the user's decision.
