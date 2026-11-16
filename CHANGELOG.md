@@ -4316,3 +4316,16 @@
   - Check: compiles. Studio Play (character moved to the sea at (20, 0, 640) by script, no clicks, moved back before stopping), wave triggered with the KrathongService attribute `DevMassLanternNow`: before 22 lanterns at ~50 FPS, after 241 lanterns (no evictions) at 42–44 FPS for 12 s (Studio PC, graphics high); screenshot shows a full band of lanterns over the sea. No Krathong errors. Not tested on a phone.
   - Backup: `backups/KrathongConfig_before_mass200_20261116.lua` (byte size + checksum match Studio).
   - Studio only, not published.
+- 2026-11-16 — Krathong / sky-lantern poses now use a method that works in the live game (user report: the character no longer kneels and prays when floating a krathong; user chose option B, and also asked for the lantern release pose).
+  - Cause: `StarterPlayer.StarterPlayerScripts.KrathongClient` built the poses with `KeyframeSequenceProvider:RegisterKeyframeSequence` (`rbxtemp://`), which only works in Studio. In live servers the krathong kneel/wish/place, the sky-lantern release (`reach`) and the lantern hanging (`reachOne`) poses did nothing.
+  - Fix in `KrathongClient`: the KeyframeSequence code was replaced by a joint driver. `loadPose` now returns a small track object (`:Play(fade)` / `:Stop(fade)`), and every `RunService.PreSimulation` it blends each joint's `Transform` (Root, Waist, shoulders, elbows, hips, knees; works on AnimationConstraint rigs) toward the same pose angles as before. `startPray`, `startHang`, `startRelease`, `switch` and `endPray` are unchanged. Patch text: `patches/KrathongClient_poseLive_20261116.lua`.
+  - Play check in Studio (fired `KrathongFx` "pray" and "lantern" from the server): krathong hold → wish (shoulders 115°, knees −90°, head 0.8 lower) → place (waist −35°), then back to standing; the lantern release kept both arms at 160° for ~10 s and then lowered them; the screenshot shows kneeling with the lotus krathong at the forehead. No KrathongClient errors in Output. Not tested: hanging pose, a real float through the button, other players seeing it, phone.
+  - Found during the test: the walk lock (`lockMove`) was undone within ~1 s, because `SprintController` resets WalkSpeed. Fixed in the next entry.
+  - Backup: `backups/KrathongClient_before_poseLive_20261116.lua` (byte size + checksum match Studio before the edit).
+  - Studio only, not published.
+- 2026-11-16 — Walk lock during the krathong / lantern poses now holds (user: "Yes, fix it"). Cause: `StarterPlayer.StarterPlayerScripts.SprintController.apply()` sets WalkSpeed to 16/26 every 1 s and on Shift, which overrode `KrathongClient.lockMove`'s WalkSpeed 0.
+  - `KrathongClient.lockMove`: sets character attribute `MoveLocked = true` while posing and clears it in the unlock function.
+  - `SprintController.apply()`: if the character has `MoveLocked`, it sets WalkSpeed 0 instead of the walk/run speed. Other scripts can use the same attribute to block walking.
+  - Play check: krathong pose (4 s) WalkSpeed/JumpPower 0 the whole time, back to 16/50 after; lantern release ~10 s locked, then back to 16. No new errors (only the usual startup "Infinite yield possible" warnings). Not tested: pressing Shift during a pose, while riding a mount, phone.
+  - Backup (changed sections): `backups/KrathongClient_SprintController_before_moveLock_20261116.lua`.
+  - Studio only, not published.
