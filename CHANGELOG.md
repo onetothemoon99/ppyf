@@ -4329,3 +4329,138 @@
   - Play check: krathong pose (4 s) WalkSpeed/JumpPower 0 the whole time, back to 16/50 after; lantern release ~10 s locked, then back to 16. No new errors (only the usual startup "Infinite yield possible" warnings). Not tested: pressing Shift during a pose, while riding a mount, phone.
   - Backup (changed sections): `backups/KrathongClient_SprintController_before_moveLock_20261116.lua`.
   - Studio only, not published.
+- 2026-11-16 — Orchard E buttons show a yellow mango picture instead of the red 🥭 emoji (user sent a screenshot of the "🥭 มะม่วงหมอนทอง / ดูต้นไม้" button: "ปรับมะม่วงเป็นสีเหลืองเหมือนที่อื่นด้วย", chose a custom button). Roblox's built-in prompt UI can only show text, so the picture needs our own UI.
+  - `StarterPlayer.StarterPlayerScripts.OrchardGui`: new block after `iconify(...)` ("ปุ่ม E หน้าตาเอง: มะม่วงเหลือง"). Every ProximityPrompt under `workspace.Orchard` whose ObjectText or ActionText starts with a tree Icon that has `IconImage` (now only mango, `rbxassetid://133531079824880`) is switched to `Style = Custom` on the client; other text goes back to `Default`. `ProximityPromptService.PromptShown` draws a BillboardGui `OrchardPromptUI` that looks like the stock button: dark rounded box, key cell (keyboard letter in a white outline / gamepad button image / touch tap icon), name line with the yellow mango picture, action line, white fill rising in the key cell while holding. Touch and mouse click call `InputHoldBegin/End`; keyboard and gamepad are still handled by Roblox. Covers the tree hole button (HolePrompt grow/ripe states) and the fruit shop counter "🥭 ร้านผลไม้ & อุปกรณ์".
+  - Play check: on Lot19 Hole1 the button became Custom with text "มะม่วงหมอนทอง" + yellow mango image + "ดูต้นไม้"; triggering it opened the tree window. Studio's screen_capture does not draw BillboardGuis in PlayerGui, so the look was checked on a flat copy (screenshot: yellow mango, white-outlined E). Fixed during the test: the E outline was drawn around the letter (UIStroke now `ApplyStrokeMode = Border`). Not tested: a hold button (harvest/steal) fill bar, phone tap, gamepad, English.
+  - Backup: `backups/OrchardGui_before_yellowPrompt_20261116.lua` (insert-only; how to remove the block).
+  - Studio only, not published.
+- 2026-11-16 — Fruit shop sign, keeper name and orchard shop window title show the yellow mango picture instead of the red 🥭 emoji (user sent a screenshot of the stall: "ปรับ icon นี้ด้วย").
+  - New `ReplicatedStorage.YellowIcon` (ModuleScript): `Attach(label, { frac, text, max, gap })` strips a leading tree emoji that has `OrchardConfig.Trees[*].IconImage` and puts that image left of the text. It works with TextScaled labels and centered or left text, re-runs when Text changes, and sizes the picture from the label height (`frac`) or the text height (`text`). `Split(text)` returns image + stripped text.
+  - `StarterPlayerScripts.OrchardGui`: new block "ป้ายร้านผลไม้: มะม่วงเหลือง" attaches it to the TextLabels in `workspace.Orchard.Decor.FruitShop.SignBoard` (front and back SurfaceGui). It runs on the client only, so the sign text in the place is unchanged.
+  - `StarterPlayerScripts.OrchardKeeperFx`: the "🥭 ป้าแตงไทย" name label uses it. `StarterPlayerScripts.ShopGui`: the shop window title ("🥭  ร้านผลไม้ & อุปกรณ์" when opened from the orchard) uses it; the seed shop title has no emoji and is unchanged.
+  - Play check (first version): the sign showed the yellow mango left of "ร้านผลไม้ & อุปกรณ์ · Fruit & Tools" but small (32 px next to 80 px text), so the size now follows the text height (sign `text = 0.8`). Keeper name: the emoji was removed and the image attached (the label was off screen, size not seen). **After the size change it was not re-checked: Studio's Play start got stuck through MCP.** Not checked: the shop window title.
+  - Backup notes: `backups/YellowIcon_targets_before_yellowSign_20261116.lua` (one-line inserts + new module; how to undo).
+  - Studio only, not published.
+- 2026-11-16 — Pet food machine confirm popup text reordered (user: "เปลี่ยนข้อความ ... ปรับเป็น ได้อาหาร x ถึง ใส่ icon ชื่อผลผลิต ดาว จำนวน").
+  - `StarterPlayer.StarterPlayerScripts.PetFoodGui`: the 4 `askConfirm` messages (crop "ใส่จำนวน" / "ใส่ทั้งหมด", fish both) now read `ได้อาหาร x1000 ถุง` then `ใส่ 🌶️ พริกขี้หนู ⭐⭐⭐⭐⭐ 2000 ชิ้น` (fish: `... 4 ตัว`; English: `Makes x1000 bags of food` / `Put in ... × 2000`). The word "ทั้งหมด" is gone from the "ใส่ทั้งหมด" message.
+  - Fixed: the stack name already holds the stars and the owned count ("พริกขี้หนู ★★★★★ x2489"), so the popup showed stars twice plus the owned total. New `plainName()` (after `starText`) strips a trailing " xN" and trailing ★/⭐/☆ before the name is shown. Checked: trimming on 5 sample names, the script compiles; the popup itself was not opened in Play.
+  - Backup: `backups/PetFoodGui_before_confirmText_20261116.lua` (the 4 original lines + how to restore).
+  - Studio only, not published.
+- 2026-11-16 — Sun Bee rod (เบ็ดผึ้งน้อย) aura dimmed another 20% (user: "ลดความสว่างแสงตอนใช้เบ็ดผึ้งน้อย" → "ลดอีก 20%").
+  - `StarterPlayer.StarterPlayerScripts.SunBeeAuraFx`: `STYLES.SunBee.dim` 0.686 → 0.549 (x0.8). This scales the rod PointLight brightness (peak ~2.06 → ~1.65), the rod Highlight, the floor circle and the rising motes together. Light range is unchanged (10–14).
+  - Not checked in Play.
+  - Backup: `backups/SunBeeAuraFx_before_dimLight_20261116.lua` (the old line).
+  - Studio only, not published.
+- 2026-11-16 — Fertilizing an orchard tree now has a character pose, a pouring sound and particles (user: "เพิ่มท่าตัวละครตอนใส่ปุ๋ย เพิ่มเสียงให้ด้วย").
+  - `ReplicatedStorage.OrchardConfig`: `KitSounds.Fertilize = "rbxassetid://9118770347"` (Sand Pour Falling On Cement Shaking Bag 8, ProSoundEffects, 2.5 s). The OrchardGui preload loop picks it up.
+  - `ServerScriptService.Orchard.OrchardService`: new `fertFx(player, hole)` above `actions.fertilize`, called right after the fertilizer is taken from the bag. It sets the character attribute `OrchardFertAt` (hole position) for `FERT_POSE_TIME` = 1.6 s, plays the sound at the hole (EffectSounds group via `playSound`), streams brown/green granules from in front of the player's hand toward the hole for ~1 s, then a green sparkle burst at the tree base.
+  - `StarterPlayer.StarterPlayerScripts.OrchardGui`: new pose in the PreSimulation loop (joint `.Transform`, works in the live game, every client sees it): waist −18°, right shoulder 75° (arm forward over the hole), elbow 12°, wrist −45° shaking ±18° at 4.5 Hz (sprinkling), hips 12°, knees −20°, smooth fade in/out. The player also turns to face the hole (`OrchardFertAt` added to the facing check).
+  - Play check: the sound loads (TimeLength 2.53 s); with the attribute set, the joints read waist −19°, shoulder 66–73°, wrist −29…−63° (shaking). Screenshot from the side showed the lean and bent knees; the right arm was hard to see on a dark avatar. Not tested: a real fertilize press on a growing tree (sound + granules + sparkle together), a second player watching, phone.
+  - Backup: `backups/Orchard_before_fertPose_20261116.lua` (inserts + original lines; how to restore).
+  - Studio only, not published.
+
+## 2026-11-16 — Badges (achievements) opened for real players
+
+- The user said "เปิดระบบได้เลยจะเอาเข้าจริงแล้ว" (open it, it's going live).
+- `ReplicatedStorage.AchievementConfig`: `DEV_ONLY` changed from `true` to `false`. After a publish, live servers count, award the real Roblox badges, pay the coin rewards and show the 🏅 button in the ☰ menu.
+- Planting and fishing start from 0 for everyone. Eggs, level and playtime use each player's existing totals, so older players get every tier they already reached (plus the coins) the first time they join after the publish.
+- `ACHIEVEMENTS.md` status line updated.
+- Backup: `backups/AchievementConfig_before_goLive_20261116.lua` (to turn it off again, set `DEV_ONLY = true` and publish).
+- Studio only, not published. Not tested on a live server yet.
+- Follow-up: the user changed the description of the "นักตกปลาฝึกหัด" badge on the Creator Dashboard to `ตกปลาครบ 10 ตัว`. Checked through the badges API (enabled, awarded 0). `ACHIEVEMENTS.md` checklist step 2 is marked done. Game still not published.
+
+## 2026-11-16 — ⚡ Instant grow (10 R$) in the orchard tree window
+
+- The user asked for a "โตทันที" button for 10 Robux in the tree-info window (Developer Product `3732354250`; checked with Roblox: name "โตทันที", 10 R$, on sale).
+- `ReplicatedStorage.OrchardConfig`: added `INSTANT_GROW_PRODUCT_ID = 3732354250` and `INSTANT_GROW_PRICE = 10`.
+- `ServerScriptService.Orchard.OrchardService`:
+  - New `actions.instantGrow(hole)`, also added to the `OrchardRequest` action allow-list.
+  - It works on your own tree that is not ripe and not dead. It remembers the hole (`growPending`), then opens the payment window.
+  - `PurchaseRouter.Register` grant: saves the orchard first, then moves `plantedAt`/`cycleStart` back so the tree is ripe right now. A failed save = receipt not confirmed (Roblox retries).
+  - If the chosen tree is already ripe, dead or dug up when the receipt arrives, the player gets 1 coupon (`growTokens`) instead. The next press uses the coupon for free.
+  - Closing the payment window clears the pending hole. The snapshot now sends `GrowTokens` and `InstantGrowOn`.
+  - Studio: player attribute `DevInstantGrowSimulate = true` simulates the purchase.
+- `ServerScriptService.Orchard.OrchardData`: `Normalize` keeps the new `growTokens` field (0–999).
+- `StarterPlayer.StarterPlayerScripts.OrchardGui`:
+  - Gold button "⚡ โตทันที · ผลสุกเลย (R$ 10)" above "🪓 ขุดต้นทิ้ง". It shows "(ใช้คูปอง · มี N ใบ)" when the player has coupons.
+  - Only visible on a growing tree. The window grows from 270 to 322 px tall while the button shows. Gamepad focus starts on it.
+- Tested in Studio Play (fake orchard key `orchard_test_1`): the button shows on a sapling with the right text and layout (screenshot). Pressing it first returned nothing because of the action allow-list, which is now fixed. After that fix, the purchase/grant path has NOT been run in Play (the user chose to skip the re-test). A real Robux purchase is not tested. Test hole 2 on the fake key was replanted as a sapling (it was a dead tree).
+- Backups: `backups/OrchardConfig_before_instantGrow_20261116.lua`, `backups/OrchardService_before_instantGrow_20261116.lua`, `backups/OrchardGui_before_instantGrow_20261116.lua`, `backups/OrchardData_before_instantGrow_20261116.lua`.
+- Studio only, not published.
+- Follow-up (same day): the user tested the button in Studio Play. The purchase worked (the tree turned ripe), but the window stayed open. The user asked for it to close after a successful purchase.
+  - `StarterPlayer.StarterPlayerScripts.OrchardGui`: pressing ⚡ now remembers the hole (`growWatch`, 180 s). When the server's data shows that tree as Ripe, `checkGrowDone` (called from `setInfo`) closes the window, both after a Robux purchase and after using a coupon. Closing the payment window or a failed request clears the watch, and opening another tree window clears it too.
+  - Not tested in Play: Studio's Play start hung on my side.
+  - Backup: `backups/OrchardGui_before_closeOnGrow_20261116.lua`.
+  - Studio only, not published.
+
+## 2026-11-16 — 💧 Water your own dead tree (10 R$, +1 💚)
+
+- The user asked for a "รดน้ำเอง 10 R$" button when asking for watering help, giving +1 เหรียญน้ำใจ too (Developer Product `3732389052`; checked with Roblox: name "รดน้ำ", 10 R$, on sale).
+- `ReplicatedStorage.OrchardConfig`: added `SELF_WATER_PRODUCT_ID = 3732389052`, `SELF_WATER_PRICE = 10`, `SELF_WATER_HELP_COINS = 1`.
+- `ServerScriptService.Orchard.OrchardService`:
+  - `askHelp` now sends the owner an `OrchardAlert` "selfWaterOffer" `{ hole, kind }` every time they press "ขอความช่วยเหลือ 🙏", even during the 60-second wait.
+  - New `actions.selfWater(hole)` (added to the action allow-list) opens the payment window for the owner's own dead, not-yet-revived tree.
+  - Purchase grant (`PurchaseRouter`) makes one save: the tree revives exactly like a friend's watering, plus `help.coins += 1`. Only then is the receipt confirmed. It waits for `busy` to clear first.
+  - Safety net: if a friend already watered the tree, or it was cut, the player still gets +1 💚 plus 1 ⚡ instant-grow coupon (`growTokens`).
+  - Shared new helpers `applyRevive(t)` and `reviveFx(hole)` are now used by both `helpTree` and the self-water grant (no behaviour change for friends).
+  - Self-water does not count toward the daily friend-help counters.
+  - Studio: player attribute `DevSelfWaterSimulate = true` simulates the purchase.
+- `StarterPlayer.StarterPlayerScripts.OrchardGui`: new card "🍂 ต้นแห้ง · หลุม N" with "💧 รดน้ำเอง · R$ 10 (+1 💚)", "รอเพื่อน 🙏" and X buttons.
+  - It closes on the server's "selfWaterDone".
+  - If nothing is pressed, it closes by itself after 30 s.
+  - Gamepad focus starts on the water button. It scales down on small screens.
+- Tested in Studio Play (fake orchard key `orchard_test_1`):
+  - Made hole 3 dead and pressed ask (`OrchardDev "ask"`). The card showed (screenshot).
+  - Ran the simulated purchase through the real remote. The tree revived (Flower), 💚 went 109 → 110 on the fake key, the card closed, and there were no errors.
+  - Not tested: the fallback coupon path, a real Robux purchase, phone or gamepad.
+- Backups: `backups/OrchardConfig_before_selfWater_20261116.lua`, `backups/OrchardService_before_selfWater_20261116.lua`, `backups/OrchardGui_before_selfWater_20261116.lua`.
+- Studio only, not published.
+- 2026-11-17 — Chicken contest: new 6th theme "🏃 ส่งเร็วที่สุด / First to enter" (user: "เพิ่มหัวข้อ ส่งประกวดเร็วที่สุด ไม่นับคะแนนจากไก่ นับจากคนที่ส่งก่อน").
+  - `ReplicatedStorage.ChickenConfig`: theme `{ Id = "first", ... }` added to `CONTEST_THEMES`; `ContestStat("first")` = 0, so the ranking value is only the existing "earlier = higher" part. New rotation switch `CONTEST_THEMES_V2_FROM = 2968` (Mon 23 Nov 2026 00:00 Thai): weeks before it still rotate the old 5 (this week 2967 stays "size"), from 2968 it rotates 6 starting with "first" (first, best, speed, size, gold, mut, ...). New helpers `ContestSince(value)` (seconds since week start from the stored ranking value) and `ContestSinceText(since, thai)` ("จ. 00:03:05" / "Mon 00:03:05").
+  - `ServerScriptService.ChickenFarm.ChickenService`: `contestEnter` keeps the first entry's value in a "first" week when the player switches to another chicken (no lost place). `info.Contest.EntrySince` and board rows `Since` added.
+  - `StarterPlayerScripts.ChickenGui` (🏆 tab) and `ServerScriptService.ChickenFarm.ChickenContestBoard` (board in the world): in a "first" week the score text shows the entry time instead of stars/score.
+  - Checked in Edit: all 4 scripts compile; theme sequence 2965-2976 = best, speed, size, first, best, speed, size, gold, mut, first, best, speed; an entry at Mon 00:03:05 ranks above Wed 13:07 and the time text reads back correctly. Not tested in Play (a real "first" week only starts 23 Nov; an entry, a switch, the board).
+  - Rewards are unchanged (same as other themes).
+  - Backup: `backups/ChickenContest_before_firstTheme_20261117.lua` (original sections of the 4 scripts).
+  - Studio only, not published.
+- 2026-11-17 — Chicken contest: 2 more themes by chicken number, "🔢 หมายเลขไก่ต่ำสุด / Lowest number" (`lowid`) and "🔢 หมายเลขไก่สูงสุด / Highest number" (`highid`) (user: "เพิ่มหัวข้อ หมายเลขไก่ ต่ำสุด/สูงสุด (เลข# ของไก่)").
+  - `ReplicatedStorage.ChickenConfig`: both themes added to `CONTEST_THEMES`. `ContestStat(themeId, c, chickenId)` now takes the chicken # (the key in data.chickens, counted per player by data.nextId): highid = #, lowid = `CONTEST_ID_BASE` (1,000,000) − #; same # = earlier entry wins (existing tie-break). New `ContestIdFromStat` turns the stored score back into the #. The new-rotation order is now explicit, `CONTEST_ROTATION_V2 = { first, best, speed, lowid, size, gold, mut, highid }`, still starting week 2968 (Mon 23 Nov 2026); weeks before it keep the old 5 (this week stays "size"). Fixed the comment date (was 24 Nov).
+  - `ServerScriptService.ChickenFarm.ChickenService` `contestEnter`: passes the chicken id to `ContestStat`.
+  - `StarterPlayerScripts.ChickenGui` (🏆 tab) and `ServerScriptService.ChickenFarm.ChickenContestBoard`: in these weeks the score text is "ไก่ #7" / "Chicken #7".
+  - Checked in Edit: 4 scripts compile; weeks 2965-2977 = best, speed, size, first, best, speed, lowid, size, gold, mut, highid, first, best; lowid #1 ranks above #3, two #1 entries rank by time, highid #250 above #12, # reads back from the score (7, 250); "best" score unchanged; 🔢 and 🏃 render on a SurfaceGui (test part removed). Not tested in Play.
+  - Backup: `backups/ChickenContest_before_idThemes_20261117.lua`.
+  - Studio only, not published.
+- 2026-11-17 — Chicken contest rotation: "🔢 หมายเลขไก่สูงสุด" (highid) moved to the week of Mon 30 Nov 2026 (user: "ย้าย หมายเลขไก่สูงสุด ไปวันที่ 30 Nov").
+  - `ReplicatedStorage.ChickenConfig`: `CONTEST_ROTATION_V2 = { first, highid, best, speed, lowid, size, gold, mut }`. Checked in Edit: 16 Nov size (unchanged) · 23 Nov first · 30 Nov highid · 7 Dec best · 14 Dec speed · 21 Dec lowid · 28 Dec size · 4 Jan gold · 11 Jan mut · 18 Jan first.
+  - Backup: `backups/ChickenConfig_before_rotationHighid_20261117.lua` (the old line).
+  - Studio only, not published.
+- 2026-11-17 — Orchard custom E button: fixed the red 🥭 that stayed right after planting a mango (user screenshot in Studio: "ตอนปลูกมะม่วงเสร็จมันจะขึ้นแบบนี้").
+  - Cause: when a prompt that is already on screen changes from "🕳️ หลุม / ปลูกต้นไม้" to "🥭 มะม่วงหมอนทอง / ดูต้นไม้", the client sets `Style = Custom`, but Roblox keeps drawing its own (Default) button until the prompt is hidden and shown again, so the custom yellow button never appears. Same the other way (cut tree while the custom button is shown).
+  - `StarterPlayer.StarterPlayerScripts.OrchardGui` ("ปุ่ม E หน้าตาเอง" block): tracks prompts on screen (`onScreen`, set in PromptShown / cleared in PromptHidden); when `check()` changes the Style of a prompt that is on screen, `reshow()` sets `MaxActivationDistance` to 0 for 0.1 s and restores it, so Roblox hides it and shows it again in the new style. (First try with an `Enabled` toggle did not work: `applyPrompt` turns hole prompts back on at once and the toggle was too fast to hide.)
+  - Play check (first version, Enabled toggle): failed — no hide/show. Final version (MaxActivationDistance) compiles; Studio Play start got stuck through MCP, then the user tested it by hand on 2026-11-17: after planting a mango the button turns yellow right away (confirmed). Not checked: the cut-tree direction.
+  - Backup: `backups/OrchardGui_before_promptReshow_20261117.lua`.
+  - Studio only, not published.
+- 2026-11-17 — Harvest pets no longer go for the same crop (user: "สัตว์เก็บเกี่ยว ถ้าใช้สองตัว บางทีมันจะเก็บต้นเดียวกัน").
+  - Cause: each Harvester pet picked the ready crop nearest to itself on its own, so two pets standing close together picked the same one; one harvested it and the other walked there for nothing.
+  - `ServerScriptService.PetSystem.Abilities.Harvester`: shared reservation table (`claims`, weak keys) for all harvest pets on the server. A pet reserves the crop it targets (refreshed every `GetTarget` call, i.e. every pet tick); other pets skip reserved crops and take the next nearest. Released on harvest, target change, or crop gone; a reservation only counts while that pet still targets the crop and expires after `CLAIM_TTL` = 5 s without a refresh (pet unequipped / owner left).
+  - `ServerScriptService.FarmSlotRegistry.FindNearestReadySlot`: optional 4th parameter `skip(slot)`; old callers unchanged.
+  - Checked in Edit with fake crops: 2 pets at the same spot → A and B (not both A); after harvesting A the reservation clears and the pet takes C (B still reserved); with one crop the 2nd pet waits; after the 5 s timeout the 2nd pet takes it. Not tested in Play with 2 real pets.
+  - Backup: `backups/Harvester_before_claimSlot_20261117.lua` (full old Harvester + old FindNearestReadySlot).
+  - Studio only, not published.
+- 2026-11-17 — Chicken yard buttons load faster on weak devices, step 1 (user: phone / low-RAM PC players warp to the chicken farm and the breeding button can't be pressed for a while; worse with pets out).
+  - Cause found: `workspace.FarmProps.ChickenYard` was ModelStreamingMode Atomic = the device had to receive all 385 parts (266 fence) before any of it appeared, including the incubator button. (Step 2, pet network traffic — every pet part is Anchored so each move sends every part — is planned, not done.)
+  - Scene (property-only, no parts moved/added/removed): `ChickenYard` Atomic → Default; `Incubator`, `Trough`, `EggStand` Default → Persistent; `ChickenMerchant`, `CleanBroom` Atomic → Persistent (35 parts total, always on the device). Unchanged: ShowYard Atomic, ChickenBoard / ChickenContestBoard Persistent. The coop button part (`PromptAnchor`) stays a loose part (Default) because ChickenYardClient finds it as a direct child.
+  - `StarterPlayer.StarterPlayerScripts.ChickenYardClient` `yardParts()`: the no-walk list (NoWalk parts, e.g. CoopBlock) is rebuilt when a NoWalk part streams in later (was built once).
+  - Play check (Studio PC): 399 studs from the yard the incubator / merchant / trough / egg stand / broom models and their buttons already exist on the client; at the yard the incubator button opens the chicken window; 10 chickens drawn; 0 of 80 position samples inside the coop. Not tested on a real phone / low-RAM device.
+  - Backup: `backups/ChickenYard_before_streaming_20261117.lua` (original modes + Command Bar restore + the old yardParts). The user was not asked for an .rbxm because only properties changed.
+  - Studio only, not published.
+- 2026-11-17 — Correction to the chicken yard streaming entry above (before/after test the same day). Inspection + test only, no new change kept.
+  - Test (Studio Play, StreamingTargetRadius temporarily 128 to act like a weak device, restored to 64/1024 after): with the OLD settings the player stood 431 studs away at the seed shop for 41 s and the whole yard (394 parts) incl. the incubator button stayed on the client. The Persistent ChickenBoard / ChickenContestBoard inside the Atomic yard kept the whole yard pinned on every device. So before step 1 the incubator button was ALREADY always on the device: streaming of the yard was NOT the cause of "wait before breeding opens". The "after" run could not be measured: Studio Play start got stuck through MCP.
+  - What step 1 still does: the ~350 fence/decor parts can now unload when far (less memory on weak devices); the 5 button models stay Persistent. Kept as is (Studio only, not published).
+  - Pet step 2 was dropped: `PetController.Spawn` already anchors only the root part (one position per pet move, 0.1 s interval since 2026-10-12).
+  - Still open: the chicken window opens as soon as the client gets the server's open event (`ChickenGui.open`), so the wait is the round trip button → server → client (possibly queued behind map streaming after a warp, or server lag). Not measured yet.
+- 2026-11-17 — Fruit shop "ขายผลผลิต" card: the mango icon is now the yellow mango picture instead of the red 🥭 emoji (user screenshot: "เปลี่ยนไอคอนมะม่วงเป็นสีเหลือง").
+  - `StarterPlayer.StarterPlayerScripts.ShopGui` card builder: if the card icon is exactly a tree emoji that has `OrchardConfig.Trees[*].IconImage` (via `ReplicatedStorage.YellowIcon.Split`), an ImageLabel "YellowIcon" (82% of the icon box) is shown and the emoji label hidden. Cards with a 3D preview (e.g. the mango seed packet) keep the preview; the image is hidden there.
+  - Play check: orchard shop → sell tab, "มะม่วงหมอนทอง (มี 172 ชิ้น)" shows the yellow mango (screenshot). Buy tab seed card unchanged.
+  - Backup: `backups/ShopGui_before_yellowCardIcon_20261117.lua` (insert only; how to remove).
+  - Studio only, not published.
