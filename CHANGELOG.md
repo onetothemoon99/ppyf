@@ -4464,3 +4464,297 @@
   - Play check: orchard shop → sell tab, "มะม่วงหมอนทอง (มี 172 ชิ้น)" shows the yellow mango (screenshot). Buy tab seed card unchanged.
   - Backup: `backups/ShopGui_before_yellowCardIcon_20261117.lua` (insert only; how to remove).
   - Studio only, not published.
+- 2026-11-17 — Pets: turning every pet off is now kept; the rabbit no longer comes back by itself (user: "เลิกใช้สัตว์เลี้ยงทุกตัว ออกเกมแล้วเข้ามาใหม่มันจะเรียกใช้กระต่าย").
+  - Cause: `ServerScriptService.PetSystem.PetManager` treated a saved empty pet list the same as a brand-new player (`applySavedSettings` returned false → `ensurePet(DEFAULT_PET_ID)` = rabbit), and the respawn handler also spawned the rabbit whenever 0 pets were out.
+  - Fix: `applySavedSettings` returns "none" for a saved empty list (no data at all = new player still gets the rabbit; saved pets that can no longer spawn still fall back to the rabbit). New `choseNone[player]` (weak table) is set on load-empty or when the last pet is turned off in the menu (`petSelect`), cleared when a pet is brought out; the respawn handler skips the rabbit while it is set.
+  - Play check: turned all 3 pets off → save had 0 pets → died and respawned → no rabbit. NOT verified: leave + rejoin (Studio Play start failed/was interrupted); a save read afterwards showed 1 pet from that interrupted start, unknown which — re-test rejoin before relying on it.
+  - The owner's test account pets were restored directly in PetSettings_v1 (NineTailFox slot 1, Jingjai 2, LittleWitch 3, their abilities on).
+  - Backup: `backups/PetManager_before_keepNoPets_20261117.lua`.
+  - Studio only, not published (user plans to publish everything at 17:00).
+- 2026-11-17 — Server restart banner: the otter head no longer covers the "?" how-to-play button (user screenshot: "icon สอนผู้เล่นใหม่ตอนประกาศรีเซิฟจะบัง", chose plan A).
+  - Cause: `RestartNoticeGui` otter head (110×82, centered, y 2-84, DisplayOrder 60) sat on top of `HowToPlayGui`'s "?" button (44×44 centered at y 34, DisplayOrder 5). The text panel starts at y 57, below the button, so only the head overlapped.
+  - `StarterPlayer.StarterPlayerScripts.RestartNoticeGui` `layout()`: when `HowToPlayButtonGui.HowToPlayButton` is on screen, the head and both paws move to the left edge of the panel (head centre 59 px from the panel's left edge); otherwise they stay centered as before. The panel itself does not move, so `DonationAnnounceGui` (placed by the panel) is unchanged. On the narrowest panel (260 px) the head ends 16 px left of screen centre, clear of the button (±22 px).
+  - Compiles; NOT visually checked (Studio Play start stuck through MCP). Check: set `ReplicatedStorage:SetAttribute("RestartEndsAt", workspace:GetServerTimeNow() + 160)` on the server in Play, then set it to nil.
+  - Backup: `backups/RestartNoticeGui_before_headLeft_20261117.lua`.
+  - Studio only, not published.
+- 2026-11-17 — REVERTED the restart banner otter-head move above (user: "ย้อนกลับก่อนไม่เอา"). `StarterPlayer.StarterPlayerScripts.RestartNoticeGui` `layout()` is back to the original (same text as `backups/RestartNoticeGui_before_headLeft_20261117.lua`; 217 lines, compiles). The head is centered again and still covers the "?" button during a restart countdown. Studio only.
+- 2026-11-17 — Restart banner vs "?" button, plan C (user: "ลอง c"): during a restart countdown the "?" how-to-play button is drawn in front of the otter head.
+  - `StarterPlayer.StarterPlayerScripts.HowToPlayGui`: `buttonGui.DisplayOrder` = 61 while `ReplicatedStorage` attribute `RestartEndsAt` is set (RestartNoticeGui is 60), 5 the rest of the time. Not 61 permanently: shop (10), chicken window (8), bag (8), login announcement (24) etc. are all below 61, so the button would show on top of them.
+  - Play check: fake countdown → button order 61, banner visible, screenshot shows the "?" and "!" in front of the otter head (ears/paws around it); countdown cleared → order 5, banner hidden.
+  - Backup: `backups/HowToPlayGui_before_aboveRestart_20261117.lua` (the old line `buttonGui.DisplayOrder = 5`; also delete the `syncButtonLayer` block).
+  - Studio only, not published.
+- 2026-11-17 — Group lantern release: removed the 1-minute warning toast (user: "เอาประกาศเตือนอีก1นาทีปล่อยโคมออก ไม่ต้องแจ้งเตือนก็ได้").
+  - `StarterPlayer.StarterPlayerScripts.KrathongClient` (~line 1276): deleted the block that showed "🏮 อีก 1 นาที ปล่อยโคมพร้อมกัน..." once per round (both versions: at the field / lanterns over the sea). Kept: the countdown pill at the lantern field, and the server toast at release time for players in the field (`KrathongService` ~289). `KrathongConfig.MASS_WARN` is now unused.
+  - Compiles; not checked in Play.
+  - Backup: `backups/KrathongClient_before_noMassWarn_20261117.lua` (the removed block).
+  - Studio only, not published.
+- 2026-11-17 — Orchard stealing: two thieves on the same owner's lot (different trees) no longer bounce (user: "ขโมยพร้อมกัน 2 คน คนละต้นแต่แปลงเดียวกัน มันจะขึ้นว่าขโมยไม่สำเร็จ").
+  - Cause: every steal saves the owner's orchard data right away (fruit -1, before giving the fruit), and one owner key can be written only every 6.5 s (`OrchardData` SAVE_GAP). `steal()` held `busy[owner]` during that save; a second thief arriving meanwhile got "ลองใหم่อีกครั้ง" at once (hold wasted), and a later one could time out at the 10 s save wait → "ขโมยไม่สำเร็จ ลองใหม่อีกครั้ง". The same lock is also held while the owner does their own orchard actions.
+  - `ServerScriptService.Orchard.OrchardService`: `steal()` now waits in line while `busy[owner]` is set (up to `STEAL_QUEUE_WAIT` = 20 s, thief sees "⏳ กำลังเก็บผล...", pick pose stays), then re-checks owner still here/same lot, tree still stealable, cooldown, picker still held, still under the tree, before saving. Same tree being stolen at that moment still says "ลองใหม่อีกครั้ง". `commit(player, st, change, maxWait)` takes an optional save wait; steals use `STEAL_SAVE_WAIT` = 20 s (others still 10).
+  - Compiles; NOT play-tested (needs 2 real thieves; `steal`/`busy` are local). Test in Team Test: 2 accounts steal 2 different ripe trees of one owner at the same time → both get +1, owner's 2 trees each lose 1. The second thief's fruit can arrive up to ~6.5 s later (Roblox save limit).
+  - Not changed: watering-to-help (`HelpPrompt`, ~line 2223) has the same "busy[owner] → ลองใหม่อีกครั้ง" pattern.
+  - Backup: `backups/OrchardService_before_stealQueue_20261117.lua`.
+  - Studio only, not published.
+- 2026-11-17 — Orchard watering-to-help gets the same queue as stealing (user: "ปรับการรดน้ำด้วย").
+  - `ServerScriptService.Orchard.OrchardService` `helpTree()`: when the owner is being saved (`busy[owner]`: another helper, a thief, or the owner's own action) the helper now waits up to `HELP_QUEUE_WAIT` = 20 s ("⏳ กำลังรดน้ำ...") instead of getting "ลองใหม่อีกครั้ง" at once; afterwards it re-checks owner still here/same lot, tree still dead and not revived, helper still at the tree, daily per-owner limit; save wait `HELP_SAVE_WAIT` = 20 s (was 10). The same tree being watered at that moment still says "ลองใหม่อีกครั้ง".
+  - Compiles; NOT play-tested (needs 2 helpers on one owner's dead trees in Team Test).
+  - Backup: `backups/OrchardService_before_helpQueue_20261117.lua`.
+  - Studio only, not published.
+- 2026-11-17 — Orchard: a tree someone is stealing from can't be stolen by another player at the same time (user: "ถ้าต้นที่กำลังขโมยอยู่ จะไม่สามารถกดขโมยได้แล้ว").
+  - `ServerScriptService.Orchard.OrchardService`: new lock on the tree's `StealPrompt` (attribute `StealingBy` = thief UserId; `setStealLock` / `clearStealLock`, `lockedPrompt[thief]`). Set when a thief starts holding (`beginAttempt`); cleared when they release early / get slapped (`endAttempt`, except "done"), after the steal finishes incl. the save (`Triggered` after `steal`), or when they leave. `beginAttempt` refuses a second thief on a locked tree ("🔒 มีคนกำลังขโมยต้นนี้อยู่") and drops their `holdStart`, so their hold can't complete a steal.
+  - `StarterPlayer.StarterPlayerScripts.OrchardGui` `applySteal`: hides the "ขโมย" button when `StealingBy` is someone else; re-applies when the attribute changes.
+  - Compiles; NOT play-tested (needs 2 thieves in Team Test: while A holds on a tree, B should not see its "ขโมย" button; after A finishes/releases/is slapped, B sees it again).
+  - Backup: `backups/Orchard_before_stealLock_20261117.lua`.
+  - Studio only, not published.
+- 2026-11-17 — Graphics: brand-new players get the graphics window opened for them on their first join (user: "ปรับให้ผู้เล่นใหม่เลือกกราฟิกเองได้ แค่ตอนเข้าเกมครั้งแรก", chose "Brand-new only").
+  - `StarterPlayer.StarterPlayerScripts.GraphicsGui`: when `IsNewPlayer` (LeaderstatsSetup: account with no coin data = first join only) becomes true and the player has no saved graphics choice (`GraphicsChosen` false), the existing window opens by itself after 1.5 s (before NewPlayerGuide starts at 4 s), with a first-time line in the status text ("🎮 เลือกกราฟิกที่เหมาะกับเครื่องคุณ · ดู FPS ด้านบนได้เลย · เปลี่ยนทีหลังได้ที่เมนู ☰ → กราฟิก" / English). Picking a level saves as before (`choose` → GraphicsSave). Closing without picking keeps the device default and does not count as chosen (slow-device auto-lowest still works). Next joins: IsNewPlayer is false, so no popup and nothing extra saved.
+  - Play check (attributes faked on the client: GraphicsChosen=false, IsNewPlayer=true): window opened, intro text shown (screenshot); the new-player guide card appeared beside it. Not tested with a real new account.
+  - Backup: `backups/GraphicsGui_before_firstJoin_20261117.lua`.
+  - Studio only, not published.
+- 2026-11-17 — Studio fake test player reset, so new-player features can be tested as a brand-new account (user: "รีเซตไอดีทดสอบ ให้เริ่มต้นใหม่ทุกอย่าง" → "ใน dev จำลองผู้เล่นใหม่จะทดสอบบทสอนผู้เล่นใหม่", chose "ยกเว้นผู้เล่นปลอม").
+  - Test with Studio Test → Clients and Servers → Local Server + 1 player: "Player1" has UserId -1 (not a real account).
+  - Fake players (UserId < 0) no longer use the shared Studio substitute keys: `ServerScriptService.AchievementService`, `CropBook`, `OrderBoardService`, `PetSystem.PetOwnership`, `MountSystem.MountOwnership`, `ChickenFarm.ChickenData` key functions only apply `Dev*KeyOverride` when `player.UserId > 0`. Inventory and orchard already add `_<UserId>` for non-owners. Your own Studio tests are unchanged. All 6 compile. Backup: `backups/KeyOverrides_before_fakePlayerExempt_20261117.lua`.
+  - New `tools/reset_studio_test_player.lua` (Command Bar, Edit mode): deletes every saved key of FAKE_ID (-1) in the game's DataStores (UserId keys, gift to_/inbox_/pending_ keys, Studio keys like StudioTest_-1 / test_-1 / studio:u-1, InvTest_..._-1, dev_<orchard>_-1, and the 4 leaderboards). Refuses any UserId > 0. Run on 2026-11-17: 92 keys checked, 20 had data from earlier tests and were removed, 0 failed; re-read confirms coins/level/bag/lessons/pets/graphics/starter gift of -1 are empty.
+  - Not covered: promo-code claim keys (code-specific) and AfkRejoin/CheatFlags/Bans logs.
+  - Studio only, not published.
+- 2026-11-17 — New-player lessons: the pet lesson is hidden for now (user: "บทสอนผู้เล่นใหม่ สัตว์เลี้ยง ซ่อนไว้ก่อน").
+  - `ReplicatedStorage.LessonConfig`: `Off = { chicken = true, pet = true }` → the pet lesson is not shown in the "?" panel or the Robot Owl window (`LessonContent.IsAvailable`), and the server loop does not check it. Turn back on = remove `pet` from `Off`.
+  - `ServerScriptService.LessonService` `markReady`: lessons in `Off` are never marked done (before, feeding a pet still marked the pet lesson ready and showed "✅ บทเรียน ... สำเร็จ! ไปรับรางวัล" even when hidden). Applies to every hidden lesson.
+  - Unchanged: the free first gacha ticket (`FREE_FIRST_TICKET`) is still granted on join; it is not tied to the lesson being shown.
+  - Both compile. Not checked in Play.
+  - Backup: `backups/Lesson_before_petOff_20261117.lua`.
+  - Studio only, not published.
+
+- 2026-11-17 — Fishing lesson, "go sell your fish" part (user: วาร์ปทันที button, show which shop is the fishing shop, sell only the fish just caught; later: also draw a guide line to the shop). Studio only, not published.
+  - `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`: `GuideTo` takes new fields. `warpId` adds a blue "⚡ วาร์ปทันที / Warp now" button under the card text. The button sends `RemoteEvents.WarpRequest(warpId)`, so the normal WarpService checks (cooldown, being carried, gacha busy) still apply, and the button hides once the player arrives. `landmark` / `landmarkGui` / `landmarkText` add a gold `Highlight` on `workspace[landmark]`, a "ร้านตกปลา ▼" BillboardGui 9 studs above the roof, and, after arrival, a gold line from the player to the model's `PromptPart` (the E spot). All of these hide while that shop window is open, when X is pressed, or when a new guide starts. `sellFish = { id, star }`: in the fishing shop's sell tab, the highlight points at the `Sell_<FishId>_<Star>` button (FishingShopGui already names its buttons this way) and scrolls the list once so that row is visible. If that fish is not in the list (sold or starred), it points at the top row instead. It no longer points at Sell All. New BindableEvent `NewPlayerGuideGui.GuideSellFish(id, star)` switches the highlight to the newest catch.
+  - `StarterPlayer.StarterPlayerScripts.LessonNpcGui`: the FishingState listener reads the catch data (`fishId`, `star`). The first catch starts the sell guide with `sellFish`, `warpId`, and the landmark. Later catches during the sell guide fire `GuideSellFish`.
+  - `ReplicatedStorage.LessonContent` (fish lesson): `catchTh/En` no longer contain "(ไกล? เมนูขีดสามเส้น > วาป)". New `sellWarpId = "fishshop"`, `sellLandmark = "FishingShop"`, and `sellLandmarkGui = "FishingShopGui"`. The arrival text now says the fishing shop is the glowing one with the ▼ arrow.
+  - Checked in Studio Play (owner account, guide fired from a client script, screenshots only, nothing sold):
+    - The blue button shows under the card text.
+    - Warp lands at (-335, 9, 436), the card switches to the arrival text, and the button hides.
+    - Only the shop house glows, not the rod showcases.
+    - The ▼ sign and highlight hide while the fishing shop window is open.
+    - In the sell tab, a real fish lower in the list (row 25) was scrolled into view and framed with "👆 กดขาย". An unknown fish id falls back to the top row.
+  - Not checked:
+    - The ▼ sign at its new height (+9). At +4 it overlapped the player's own name tags.
+    - The new guide line to the shop. Studio got stuck on "Start play hasn't finished yet" after these two edits.
+    - A real catch → sell flow.
+    - Pressing the button by hand, gamepad, and phone.
+  - Backups: `backups/NewPlayerGuide_before_fishWarpShop_20261117.lua` (full source) and `backups/LessonNpcGui_LessonContent_before_fishWarpShop_20261117.lua` (changed sections).
+
+- 2026-11-17 — Docs only: new `NEW_PLAYERS_CHECK.md` (user: "ทำ md ไว้ รอบหน้าจะได้ไม่ต้องดูcode"). Two read-only Studio Command Bar scripts with Thai how-to-read tables: (1) new players since a date (`PlayerLevel_v1` CreatedTime + `Lessons_v1` ready/claimed, `PlaytimeLeaderboard_v1`, `PlayerCoins_v1`), (2) server crash check from `ServerHealth_v1` (start/end per server, gaps > 7 min). No HttpService, so no Studio warning. No Studio or game change.
+
+- 2026-11-17 — "⚡ วาร์ปทันที" button on every guide card that points to the Robot Owl (user: "หลังจากขายปลาเสร็จ ที่ว่าไปคุยกับนกฮูก เพิ่มปุ่มวาร์ป ไปหา npc ด้วย", chose the recommended plan with all 3 places). Studio only, not published. The server part (WarpService/WarpConfig) needs a Publish to work on live servers.
+  - `ReplicatedStorage.WarpConfig`: new destination `owl` (`Npc = "GuideNPC"`, `NpcDist = 7`, fallback Pos (60, 5, -41)). It has no `Cat`, so WarpGui (☰ > Warp) does not list it, and the menu still has the same spots. WarpGui was not changed.
+  - `ServerScriptService.WarpService`: a destination with `Npc` puts the player `NpcDist` studs in front of that model's pivot (LookVector), facing it, computed on the server at warp time. Cooldown, carried, and gacha-busy checks are the same as other warps.
+  - `StarterPlayer.StarterPlayerScripts.LessonNpcGui`:
+    - `guideToTeacher` (the "?" panel's gold Claim button) now sends `warpId = "owl"` and `closeWhenOpen = "LessonNpcGui"`.
+    - After a fish sale, the card no longer vanishes after 7 s. It becomes a guide to the owl: "เก่งมาก! ขายปลาได้แล้ว ไปรับรางวัลที่หุ่นนกฮูก", with a gold line, the warp button, and the arrival text "ถึงแล้ว! กด E คุยกับหุ่นนกฮูก". It plays the big success sound.
+  - `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`:
+    - The first lesson's last step (`npc`) has `warp = "owl"`, and `enterStep` shows or hides the button per step. `finish()` hides it.
+    - New GuideTo field `closeWhenOpen`: the card closes when that ScreenGui opens (checked every 0.3 s).
+  - Check: all 4 scripts compile. In Edit mode, raycasts 7 studs either side of the owl hit terrain (no wall). **Not checked in Play.** Studio is still stuck on "Start play hasn't finished yet". Not yet confirmed that the owl's LookVector is its front.
+  - Backup (sections + restore notes): `backups/OwlWarp_sections_before_owlWarp_20261117.lua`.
+- 2026-11-17 — Kindness shop (ร้านแลกน้ำใจ): "แปลงปลูกผัก +5 (ถาวร)" now costs a flat 40 💚 every time; the 5-purchase limit stays (user: "ไม่ต้องเป็นขั้นบันได ราคาเท่าเดิมได้เลย", chose "Keep 5-buy limit").
+  - `ReplicatedStorage.OrchardConfig` `HelpShop` item `PlantQuota`: `Prices = { 40, 60, 80, 100, 120 }` → `Price = 40, MaxBuys = 5` (new field, counted from `shop.quota`).
+  - `ServerScriptService.Orchard.OrchardService` `shopPrice`: an item with `MaxBuys` returns nil (sold out) once `shop.quota` reaches it; the shop info still sends `Step`/`Steps` (e.g. 2/5) for MaxBuys items. `shop.quota` keeps counting for the per-purchase reference.
+  - Check: both compile; the price logic gives buys 1-5 = 40 and buy 6 = sold out. Not checked in Play. Players who already bought at 60+ get no refund.
+  - Backup: `backups/HelpShop_before_flatQuotaPrice_20261117.lua`.
+  - Studio only, not published.
+
+- 2026-11-17 — New lesson **🥭 สวนมะม่วง / Mango orchard** with the NPC **ลุงมะนาว (Uncle Manao)**, a ripe mango tree, and a dry tree. User request: "สอนเกี่ยวกับระบบมะม่วง สร้าง NPC ชื่อ ลุงมะนาว…"; the user chose the recommended answers (no forced sell, a real mango once per account, a slapped player keeps the picker). Studio only, not published. It needs a Publish, and the orchard must be open (`OrchardConfig.Enabled`).
+  - New `ServerScriptService.Orchard.UncleManao` (Script):
+    - **Uncle:** a copy of `OrchardTemplates.FakeGuard` with a lime shirt, named `workspace.UncleManao` ("👨‍🌾 ลุงมะนาว"), standing at (597, 45, -407) east of the fruit shop.
+    - **Trees:** `Orchard.Decor.UncleGarden` holds a ripe mango tree (`MangoRipe`, 13 tall, gold sparkles) at (588, 45, -394) and a dry tree (`MangoDead`, 9 tall) at (606, 45, -394). They are scenery, not one of the 30 lots, and are not saved.
+    - **Steal prompt** (E, hold 10 s): a player who is not in the quest and holds a picker gets chased about 2.5 s, then slapped (arm-swing anim via `SlapAt`, `OrchardAlert` "stun" 5 s, 👋💥, toast). They keep the picker. A quest player who holds the picker gets the picking pose. On success, the server first saves `stole` in Lessons_v1, then takes 1 picker and gives 1 real Monthong mango (100k), once per account.
+    - **Water prompt** (F, hold 3 s, quest players only): equips the can and pours. On success, the dry tree shows as green for 30 s.
+    - Sets ReplicatedStorage attributes `UncleManaoPos`, `UncleRipeTreePos`, `UncleDeadTreePos`, and `OrchardFruitShopPos` for the guide.
+  - `ServerScriptService.LessonService`:
+    - Lessons_v1 gets a new field `orchard = { stole, watered }`.
+    - `LessonRequest` takes "start"/"stop" with id "orchard", which sets the in-quest flag for the session.
+    - New BindableFunction `LessonService.OrchardQuest` ("status" / "mark"). Stealing plus watering marks the lesson READY.
+    - Player attributes: `OrchardQuest`, `OrchardQuestStole`, `OrchardQuestWatered`.
+  - `ReplicatedStorage.LessonConfig`: Order basic, fish, **orchard**, pet, chicken. Reward 10,000 coins + 300 EXP.
+  - `ReplicatedStorage.LessonContent`: new lesson entry (`guideSet = "orchard"`), shown only while the orchard is open.
+  - `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`: new `ORCHARD_STEPS` set and `checkOrchardStep`. Every step has the ⚡ Warp now button to the orchard.
+    - (1) Buy a mango seed at the fruit shop. The shop glows, and the Buy button is highlighted. The seed lands in slot 1/2.
+    - (2) The line goes to the nearest empty hole (own lot, or a free lot), and the card shows the real slot number of the seed.
+    - (3) Buy a picker. The card asks the player to sell crops first if they are short of coins. The picker goes to slot 4.
+    - (4) Steal at the uncle, then water the dry tree. The uncle glows.
+    - When the lesson ends, the guide goes to the Robot Owl with a warp button. Pressing X tells the server "stop".
+    - The landmark accepts a path with "/".
+  - `HotbarState.AutoAssignNew`: attribute `GuideHandSlot` puts a new picker into that slot.
+  - `ShopGui`: every Buy button gets the attribute `GuideItem` = CropType.
+  - `OrchardGui`: the slap arm swing also works for `UncleManao`.
+  - Check: all 7 scripts compile. A dry run in Edit placed both trees and the uncle on terrain with no overlaps (the dry-run copies were deleted). **Not tested in Play** (Studio is stuck on "Start play hasn't finished yet").
+  - Backup (sections + restore notes): `backups/OrchardLesson_sections_before_orchardLesson_20261117.lua`.
+
+- 2026-11-17 — Uncle Manao is now a cute chibi model matching ป้าแตงไทย (user: "แก้โมเดลลุงมะนาวให้อยู่ในธีม ดูตัวอย่างที่ป้าแตงไทย"). Studio only, not published.
+  - New template `ServerStorage.OrchardTemplates.UncleManao`: a single AI-generated `body_geom` MeshPart (chibi Thai uncle, woven straw hat, white mustache, lime shirt, towel on the shoulder), 5.8 studs tall like ป้าแตงไทย. It is anchored with collision, query, and touch off, and its front faces LookVector.
+  - `ServerScriptService.Orchard.UncleManao`: `spawnUncle` places that model at (597, 45, -407) facing the fruit shop (it replaces the R15 FakeGuard copy). The speech bubble sits above `body_geom`. The slap no longer walks with a Humanoid: the server sets model attributes `DashTo` and `DashAt`, waits 0.4 s, then stuns the player as before.
+  - New `StarterPlayer.StarterPlayerScripts.UncleManaoFx` (same pattern as `OrchardKeeperFx`):
+    - Gold FredokaOne name "🍋 ลุงมะนาว / Uncle Manao".
+    - A greeting bubble beside the head within 16 studs: quest players get an invitation, others get "don't steal my mangoes" lines.
+    - Breathing sway, and he turns to look at the player within 20 studs (up to 75°).
+    - Dash slap: hops to the thief, swings left and right, then hops back.
+  - `OrchardGui`: removed the UncleManao arm-swing addition from earlier today (no rig any more).
+  - Check: the scripts compile. A temporary Edit preview with the trees was screenshotted and then deleted. **Not seen in Play** (breathing, dash, name label).
+  - Backup (old sections): `backups/UncleManao_before_chibiModel_20261117.lua`.
+
+- 2026-11-17 — Mango orchard lesson step 4: highlights that teach the player to hold the picker and the watering can (user: "สอนกดใช้ตะกร้าขโมย ไฮไลน์ให้ผู้เล่นรู้ รวมถึงตอนรดน้ำสอนใช้บัวรดน้ำ"). Studio only, not published.
+  - `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`: new hint mode `orchardHold` (`orchHold` = "Picker" / "Can"). It hides once the player holds that item. Order of targets:
+    - The bar slot that has the item (`CustomHotbar.Slot<n>`), with "👆 กดถือตะกร้อขโมย" / "👆 กดถือบัวรดน้ำ".
+    - If that slot is on the other bar page, the `PageToggle` ▶ button ("👆 กดเปลี่ยนหน้าแถบ").
+    - If the item is not on the bar, 🎒 (`InventoryPrompt`). Once the bag is open, `Tab_tool`, then the card's "ใช้" button.
+    - The tree to visit now glows: Uncle's ripe mango before stealing, the dry tree after (`orchLandmark`). The watering card shows the can's slot number.
+  - `StarterPlayer.StarterPlayerScripts.FullInventoryGui`: each card's `UseButton` gets the attribute `GuideTool` ("Picker" / the `OrchardToolId`).
+  - Unchanged: holding F still auto-equips the can (the highlight only teaches).
+  - **Checked in Studio Play** (owner account, test bag key `InvTest_…`, a client-only fake tree to reach step 4, client-only `OrchardQuestStole`, nothing bought, planted or stolen):
+    - The step 4 card says slot 3 (where the picker is in this test bag), and a gold frame pulses on slot 3 with "👆 กดถือตะกร้อขโมย". The hint disappears once the picker is held.
+    - In the watering phase, the card says slot 8, the ▶ page button is highlighted, and the dry tree glows.
+    - The chibi uncle, his gold name, and the greeting bubble were seen in Play.
+    - No script errors.
+  - **Not checked:** the bag path (🎒 → Tools tab → Use), the slot-8 frame after switching page, and a real steal/water.
+  - Backup: `backups/OrchardHoldHint_sections_before_holdHint_20261117.lua`.
+- 2026-11-17 — Mango orchard lesson, plant step (2/4): added highlights (user screenshot: "เพิ่มไฮไลน์สอนปลูกมะม่วงด้วย").
+  - `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`:
+    - Not holding the mango seed → hint mode `orchardHold` with new value "Seed": gold frame + "👆 กดถือเมล็ดมะม่วง" on the hotbar slot that has the seed (other bar page = page button; not on the bar = 🎒 → tab "Tab_seed" → its "ใช้" button).
+    - Holding the seed → the slot hint goes away and the nearest empty hole glows with a floating "หลุมว่าง · กด E" sign (landmark). `nearestEmptyHole()` now also returns the hole path; the landmark renderer accepts a single BasePart (was Model only).
+  - `StarterPlayer.StarterPlayerScripts.FullInventoryGui`: mango seed cards' "ใช้" button get `GuideTool = "Seed"` so the guide can point at it.
+  - Play check (own Studio account, orchard lesson started via StartGuide "orchard", seed step skipped since the bag has seeds): slot 2 framed with "👆 กดถือเมล็ดมะม่วง" (screenshot); after equipping the seed the hint hid and Lot19 Hole1 was highlighted with the sign (screenshot). Not checked: the bag path (seed not on the bar) and phone.
+  - Backup: `backups/NewPlayerGuide_before_mangoPlantHint_20261117.lua` (also has the old FullInventoryGui line).
+  - Studio only, not published.
+- 2026-11-18 — Pet gacha: "ตั๋วธรรมดา ไม่พอ (มี 40 ใบ)" shown while the player had tickets (report from kxnfilm_007 / UserId 5741923905).
+  - Cause: when `GachaTickets.SpendAndRoll` hit an error (DataStore UpdateAsync failure or an error inside the roll), it returned "not spent" plus the on-screen count, so `GachaService.roll` showed "not enough tickets". No tickets were taken. The real error went only to the server output (`GachaTickets: หักตั๋ว/สุ่ม … ไม่สำเร็จ`), so the exact cause in the live server is unknown.
+  - Player data (read-only check): `GachaTickets_v1` now has Normal 0 and Normal pity 0/0/0. The screenshot had 40 tickets with pity 9/63/160, so the 40 tickets were rolled afterwards and the 40th hit the Secret guarantee (200). Nothing was lost, so no data was changed.
+  - `ServerScriptService.GachaTickets`: `SpendAndRoll` returns the error text as a 6th value when it fails.
+  - `ServerScriptService.GachaService` `roll()`: on that error it now says "ระบบบันทึกขัดข้อง ลองกดสุ่มใหม่อีกครั้ง (ยังไม่หักตั๋ว)" and clears the roll cooldown. Real "not enough" keeps the old message.
+  - Not play-tested (the error path needs a DataStore failure).
+  - Backup: `backups/GachaTickets_GachaService_sections_before_rollErrorMsg_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — Pet gacha roll: retries by itself when the DataStore fails. Live server logs from the user confirmed the cause of the kxnfilm_007 report: `UpdateAsync` on `GachaTickets_v1` failed with `InternalServerError` / `502: API Services rejected request … An internal server error occurred` (a fault on Roblox's side).
+  - `ServerScriptService.GachaTickets` `SpendAndRoll`: tries up to 3 times (waits 1 s, then 2 s). Each roll request gets a GUID stored with its results in `data.lastRoll`. If an attempt was written but still reported an error, the retry finds the same id and reuses the saved results, so tickets are never taken twice. If all 3 attempts fail, it returns the error text, and GachaService shows the "ระบบบันทึกขัดข้อง … (ยังไม่หักตั๋ว)" message from the earlier entry.
+  - Note: Roblox swallows an error thrown inside the UpdateAsync transform (UpdateAsync still succeeds), so a roll-function error would still show "ไม่พอ". Not seen live.
+  - Tested in Edit with a cloned module and a fake key (-98765, deleted afterwards), using a store wrapper that throws: failed then OK → spent once (rollFn ran once); written then error → spent once, no double spend; 3 failures → nothing spent, error returned (~3 s wait). Not tested in a real Play roll.
+  - Backup: `backups/GachaTickets_SpendAndRoll_before_retry_20261118.lua`.
+  - Studio only, not published.
+- 2026-11-18 — Orchard watering-to-help: several helpers on one owner's lot (different trees) now all succeed (user: "ช่วยกันรดน้ำคนละต้นในแปลงเดียว รดหลายคนไม่ได้ … ขึ้นไม่สำเร็จ").
+  - Cause: each help saved the owner's orchard data right away, and one key can be written only every 6.5 s (`OrchardData` SAVE_GAP). The 2026-11-17 queue let helpers wait up to 20 s, so the 3rd–4th helper (more if a thief or the owner was also saving) still timed out → "ช่วยไม่สำเร็จ ลองใหม่อีกครั้ง".
+  - `ServerScriptService.Orchard.OrchardService` `helpTree()`: the tree is revived in memory at once and the owner is saved with `OrchardData.SaveLater` (all helps in a few seconds share one write). Helpers no longer hold `busy[owner]`. They still wait (up to `HELP_BUSY_WAIT` = 25 s) only while another save of the owner is in flight (steal / harvest / the owner's own action), because a failed save there rolls back the whole data. The tree is reserved in `helpingKey` during that wait, so two people can't revive the same tree. Removed `HELP_QUEUE_WAIT` / `HELP_SAVE_WAIT`.
+  - Trade-off: if the server dies within a few seconds of a help (before the save), the owner's tree is dead again but the helper keeps their 💚. No coins or items are duplicated.
+  - Compiles; NOT play-tested (a fake owner never saves, so a solo test can't show it). Test in Team Test: 3+ accounts water different dead trees of one owner at the same time → all revive, and after the owner rejoins the trees are still revived.
+  - Backup: `backups/OrchardService_helpTree_before_helpNoSyncSave_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — Orchard stealing: thieves on one owner's lot (different trees) now share one save, so 3+ thieves at once all succeed (user: "ทำตอนขโมยด้วย", chose plan A "batch saves").
+  - Cause: same as watering. Each steal saved the owner on its own (one write per 6.5 s), so with the 2026-11-17 queue (20 s) the 3rd–4th thief timed out → "ขโมยไม่สำเร็จ ลองใหม่อีกครั้ง".
+  - `ServerScriptService.Orchard.OrchardService`: new `stealBatch[owner]` + `runStealBatch` / `joinStealBatch` (just above `steal()`). A thief who passes all checks joins the owner's batch. One `commit` takes −1 fruit for every request in the batch, and requests that arrive during that save go into the next batch. The owner is still saved BEFORE fruit is given (no fruit duplication if the server dies). The batch holds `busy[owner]` only while it saves, and waits (up to `STEAL_BATCH_WAIT` = 25 s) for the owner's own saves. Removed `STEAL_QUEUE_WAIT` and the per-thief wait/re-check block. A failed save fails the whole batch ("ขโมยไม่สำเร็จ", picker kept). A tree that changed during the wait says "ต้นนี้ขโมยไม่ได้แล้ว". Same-tree lock (`stealing[key]`, `StealingBy`), slap, cooldown and picker use are unchanged.
+  - New Studio test command `ServerStorage.OrchardDev:Invoke(player, "stealbatch", "2,3,4,5", "prep")` (make those trees ripe with 3 fruits, saved), then `(player, "stealbatch", "2,3,4,5")` (send the requests at once, no real thief, nothing given).
+  - Play-tested (Studio, test key, player as owner): 4 requests at once → all ok, 2 saves (x1 at 6.9 s, x3 at 13.6 s), each tree 3→2 fruits, stolen=1. Repeating on the same trees → refused (once per round). Not tested with real thieves; the next step is Team Test with 3 thieves on one owner.
+  - Test data left: the test-key orchard (Lot19) holes 2–5 are now ripe with 2 fruits.
+  - Backup: `backups/OrchardService_steal_before_stealBatch_20261118.lua` (section backup).
+  - Studio only, not published.
+
+- 2026-11-18 — Mango orchard lesson: 4 → 6 steps. The lesson tree grows instantly, then the lesson teaches harvesting and selling (user: "ตอนปลูก ปรับให้โตพร้อมเก็บ แล้วสอนเก็บ แล้วสอนขาย"). Studio only, not published.
+  - New order: buy seed → plant (**grows instantly**) → **harvest** → **sell at the fruit shop** → buy picker → steal + water at Uncle Manao.
+  - `ServerScriptService.Orchard.OrchardService` `actions.plant`: new helpers `lessonQuestFn` / `lessonGrowAllowed` / `lessonGrowMark`. A player in the orchard quest who has not used the free grow yet gets a ripe mango tree (same math as ⚡ instant grow) and the message "⚡ …ต้นในบทเรียนโตทันที". `grown` is saved in Lessons_v1 **before** the tree is grown, so it works once per account.
+  - `ServerScriptService.LessonService`: Lessons_v1 `orchard.grown` (normalize + save merge). `OrchardQuest` "status" returns `grown`, and "mark" accepts "grown".
+  - `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`:
+    - New steps `oHarvest` and `oSell` in `ORCHARD_STEPS`.
+    - `oHarvest` glows the nearest ripe mango tree in your lot ("สุกแล้ว · กด E เก็บ"). It passes when the mango count in the bag goes up. It is skipped if the planting step was skipped (6 trees already) and no tree is ripe.
+    - `oSell` uses the new shop hint `orchardSell`: Sell tab → the Sell button on `Orchard_Mango`. It passes when the mango count goes down and coins go up, and is skipped if there was no mango to sell.
+    - `orch.fruits` is recorded on step entry.
+  - `StarterPlayer.StarterPlayerScripts.ShopGui`: each sell row's button gets `GuideItem` = CropType.
+  - `ReplicatedStorage.LessonContent`: the orchard lesson card text now lists the 6 steps.
+  - Check:
+    - All 5 scripts compile.
+    - Solo Play (owner account) showed no script errors. StartGuide "orchard" set `OrchardQuest = true` on the server.
+    - The client checks timed out, so the 6-step card was not seen.
+    - **Not tested:** a real plant → instant grow → harvest → sell. That needs real coins, so it is left to the user, for example on Local Server Player1 (-1).
+  - Backup: `backups/OrchardHarvestSell_sections_before_harvestSellSteps_20261118.lua`.
+- 2026-11-18 — Orchard planting: no more "stuck" plant pose, and the next tree can be planted right away (user: "บางทีกดปลูกแล้วท่าค้าง", "กดปลูกเสร็จไปปลูกต้นถัดไปขึ้น ให้รอก่อน").
+  - Cause: `actions.plant` saved the orchard right away and waited for the key's save slot (one write per 6.5 s). The pose stayed on during that wait (up to 6.5–8 s), and `busy[player]` was held, so planting the next tree got "ใจเย็นๆ รออีกนิดนะ".
+  - `ServerScriptService.Orchard.OrchardService` `actions.plant`: the tree (and lot claim / lesson instant grow) goes into memory at once, then `OrchardData.SaveLater` (several plants in a row share one write); the bag is saved as before. No save-fail path any more (no seed refund needed). `plantPoseDone` now keeps the pose at least `PLANT_POSE_MIN` = 1.1 s (`plantStartAt` set in `plantFx`), then ends it; `PLANT_POSE_MAX` 8 s safety unchanged.
+  - Trade-off: if the server dies within a few seconds of planting (before the save), the seed is gone and the tree isn't saved. Nothing is duplicated.
+  - Play-tested (Studio, test key `dev_orchard_test_1`): planted holes 4 and 5 two seconds apart → reply 0.2 s each, pose ended ~1.2 s after reply, no "wait" message; hole 1 also planted. After stopping Play, `Orchard_v1` `dev_orchard_test_1` had the trees at holes 1/4/5 saved. (For comparison, removing trees — still a direct save — took 6.6 s each.) Not tested by pressing the hole prompt by hand or on a phone.
+  - Test data changed: test-key orchard Lot19 holes 4–6 dug up, holes 1/4/5 newly planted (3 mango seeds used from the test bag).
+  - Backup: `backups/OrchardService_plant_before_plantNoSyncSave_20261118.lua` (section backup).
+  - Studio only, not published.
+
+- 2026-11-18 — Mango orchard lesson: fixed the stuck harvest step. The lesson tree now dies after its first harvest, and a new step teaches cutting it down, so the lesson has 7 steps (user: "เก็บเกี่ยวมะม่วงแล้วไม่ผ่าน" + "หลังจากเก็บเกี่ยวเสร็จปรับต้นให้ตัดและสอนตัดต้นไม้ได้เลย"). Studio only, not published.
+  - **Bug** in `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`: `NewPlayerGuide:616: attempt to call a nil value`. The new tree finder (from earlier today) called `orchardLots()` before that local function was defined. The guide loop crashed on the harvest step, so the card stayed on 3/6 even after the mango was in the bag (seen on Local Server Player1). `orchardLots` now sits above the helpers, and a check confirmed every orchard helper is defined before its first use.
+  - New order: buy seed → plant (grows instantly) → harvest → **cut the dry tree** → sell → buy picker → steal + water at Uncle Manao.
+  - `ServerScriptService.Orchard.OrchardService`:
+    - `actions.plant` marks the instant-grown lesson tree with `lesson = true`.
+    - `actions.harvest`: a `lesson` tree dies after its first harvest (`harvests` = the tree's max, `dead`, and `lesson` is cleared), with the message "🍂 ต้นในบทเรียนแห้งแล้ว กดค้าง \"ตัดต้น\" ได้ท่อนไม้".
+    - Cutting uses the existing `actions.cut` (free axe, logs, hole freed).
+  - `ServerScriptService.Orchard.OrchardData.Normalize` keeps the tree field `lesson`.
+  - `NewPlayerGuide`:
+    - New step `oCut`. The dry mango tree in your lot glows with "ต้นแห้ง · กดค้าง E ตัด".
+    - It passes when you get more logs (`IsOrchardMat` Wood) or your lot has fewer trees. It is skipped if the tree was not planted in this lesson and there is no dry tree.
+    - `orchardRipeTree` now uses `orchardFindTree(stage)`, and `orch.wood` is recorded on step entry.
+  - `ReplicatedStorage.LessonContent`: the orchard lesson text lists 7 steps.
+  - Check: all 4 scripts compile. **Not play-tested.** To retest, reset Player1 (-1) first with `tools/reset_studio_test_player.lua`: the old run already used the free grow and harvested its tree.
+  - Backup: `backups/OrchardLessonCut_sections_before_cutStep_20261118.lua`.
+
+- 2026-11-18 — Mango orchard lesson: in the cut step the axe goes to slot 9 and is highlighted, and in the watering step the can goes to slot 8 (user: "ตอนใช้ขวานให้ไฮไลต์เหมือนบัวรดน้ำ" + "ถ้าไม่มีขวานช่อง 9 หรือบัวรดน้ำ 8 ให้ item มาช่อง"). Studio only, not published.
+  - `StarterPlayer.StarterPlayerScripts.HotbarState`: new `HotbarState.PlaceGuideKit(tool)`.
+    - It works for the watering can and the axe only, using the existing `NEW_PLAYER_HOME` slots (can 8, axe 9).
+    - If the tool is not on the bar, it goes into its home slot. Anything already in that slot moves to the first free slot, or back to the bag if the bar is full.
+    - It then calls `OnUsePlaced`, so the bar jumps to that page. A tool that is already on the bar, in any slot, is not moved.
+  - `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`:
+    - New helpers `isAxe` and `orchardPlaceKit(test)`.
+    - **Cut step (`oCut`):** if you are not holding the axe, it goes to slot 9 and the hold highlight (`orchHold = "Axe"`) shows a gold frame with "👆 กดถือขวาน" (or the page button if needed). Once you hold it, only the dry tree glows.
+    - The cut card now says "กดช่อง N ถือขวาน แล้วยืนใกล้ต้นแห้ง กดค้าง E \"ตัดต้น\"…". The wrong "ขวานขึ้นมือให้เอง" was removed: the axe has not been equipped for the player since 2026-11-07.
+    - **Watering step (Uncle's dry tree):** the can goes to slot 8 if it is not on the bar.
+  - `ServerScriptService.Orchard.OrchardService` `actions.harvest`: when the lesson tree dies, `OrchardItems.EnsureKit` makes sure the axe is in the bag.
+  - Unchanged: the mango seed and picker still use the bag path (🎒 → tab → "ใช้"). Known gap still there: after "ใช้" the highlight points back at the tab instead of "close the bag".
+  - Check: all 3 scripts compile, and the new helpers are defined before they are used. **Not play-tested.**
+  - Backup: `backups/OrchardKitSlot_sections_before_kitSlot_20261118.lua`.
+
+- 2026-11-18 — Lesson panels: the mango orchard lesson icon is now the yellow mango picture instead of the red 🥭 emoji (user screenshot of "วิธีเล่น": "เปลี่ยนไอคอนสีมะม่วงเป็นสีเหลือง"). Studio only, not published.
+  - `StarterPlayer.StarterPlayerScripts.HowToPlayGui` (row icon) and `StarterPlayer.StarterPlayerScripts.LessonNpcGui` (Robot Owl lesson card icon): after the icon TextLabel is built, its emoji goes through `ReplicatedStorage.YellowIcon.Split`, the same way as the ShopGui card. If it is a tree emoji with `OrchardConfig.Trees[*].IconImage` (now only mango, `rbxassetid://133531079824880`), an ImageLabel "YellowIcon" is placed in the label (32 px in How to play, 90% of the 30 px box at the owl) and the emoji text is cleared. Other icons (🌱 🎣 🐾 …) are unchanged. `LessonContent` still stores 🥭.
+  - Check: both scripts compile, `YellowIcon.Split("🥭")` returns the image with no leftover text, and nothing else rewrites `icon.Text`. **Not seen in Play.**
+  - Backup: `backups/LessonIcons_sections_before_yellowMango_20261118.lua`.
+
+- 2026-11-18 — Mango orchard lesson v3, back to 6 steps (user: "ตอนซื้อตะกร้อขโมยบังคับให้อยู่ในช่อง 4" + "ขั้นตอนที่ 2/7 ไม่ต้องมีปุ่มวาร์ป" + "ไม่เอาขั้นตอนสอนตัดไม้แล้วไปขายเลย" (chose: the lesson tree is a normal tree again) + "ตอนรดน้ำบังคับต้องถือบัวเท่านั้น"). Studio only, not published.
+  - New order: buy seed → plant (grows instantly, **no warp button**) → harvest → sell → buy picker (**slot 4**) → steal + water at Uncle Manao.
+  - `StarterPlayer.StarterPlayerScripts.HotbarState`:
+    - `PlaceGuideKit` now forces the fruit picker (`IsStealHand`) into slot 4, even if it already sits in another slot. Whatever was in slot 4 moves to the first free slot, or back to the bag.
+    - The can (8) and axe (9) still move only when they are not on the bar.
+    - The `GuideHandSlot` block in `AutoAssignNew` now calls `PlaceGuideKit` instead of "slot 4 if free, else first free slot".
+  - `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`:
+    - Removed `warp` from `oPlant`.
+    - Removed the `oCut` step and its check (the helpers `orchardFindTree` / `orchardWood` / `isAxe` stay; `orchardWood` is unused).
+    - The steal phase of `oUncle` calls `orchardPlaceKit(isPicker)`, so the picker is in slot 4 while the gold frame shows it.
+  - `ServerScriptService.Orchard.OrchardService`: the lesson tree is normal again.
+    - `actions.plant` no longer sets `lesson = true`.
+    - `actions.harvest` lost the die-after-first-harvest branch, its message and the `EnsureKit` call. It now clears any leftover `lesson` flag. `OrchardData` still keeps the field, which is harmless.
+  - `ServerScriptService.Orchard.UncleManao` `startPour`: watering Uncle's dry tree needs the can **in hand**. It no longer calls `EquipKit`. If you are not holding the can, the toast says "🚿 ถือบัวรดน้ำก่อน แล้วค่อยรดน้ำให้ลุง (กดช่องที่มีบัวรดน้ำ)", nothing pours and the hold does not count. A missing can is put back in the bag (`EnsureKit`).
+  - `ReplicatedStorage.LessonContent`: the orchard lesson text lists 6 steps (picker "ลงช่อง 4", "ถือตะกร้อ… ถือบัว").
+  - Check:
+    - All 5 scripts compile.
+    - `ORCHARD_STEPS` = oSeed, oPlant, oHarvest, oSell, oHand, oUncle, and oPlant has no warp.
+    - No `oCut`, `lessonDead` or `newTree.lesson` is left, and nothing calls `EquipKit` in UncleManao.
+    - **Not play-tested.**
+  - Backup: `backups/OrchardLessonV3_sections_before_pickerSlot4_noCut_20261118.lua`.
+
+- 2026-11-18 — Fix: the Robot Owl text for the mango orchard lesson, step 6, was garbled by the v3 edit ("…แล้วถือบัวมะม่วงลุงมะนาว แล้วรดน้ำ…"). It now reads "6. ถือตะกร้อขโมยมะม่วงลุงมะนาว แล้วถือบัวรดน้ำต้นแห้งให้ลุง" in `ReplicatedStorage.LessonContent`. The English line was already correct. The script compiles. Studio only, not published. Backup: the 7-step text is in `backups/OrchardLessonV3_sections_before_pickerSlot4_noCut_20261118.lua`.
+
+- 2026-11-18 — Orchard: the water and steal buttons only appear while you hold the right tool (user: "ต้นที่ขึ้นให้รดน้ำ ถ้าไม่ถือบัวรดน้ำไม่ต้องมีปุ่มให้กด" + "ต้นที่จะขโมย ถ้าไม่ถือตะกร้อขโมยก็ไม่ต้องมีปุ่มให้กดขโมย"; chose: riding the elephant still counts for watering). Studio only, not published.
+  - `StarterPlayer.StarterPlayerScripts.OrchardGui` (client only; the server still checks everything):
+    - **"รดน้ำช่วย 💚" on a friend's dead tree (`HelpPrompt`)** shows only while you hold the watering can, or while riding a mount with `HelpHoldScale` (the elephant). New helpers `holdingCan` / `ridingHelpMount`. The owner's own "ขอความช่วยเหลือ 🙏" button is unchanged, and so is the watering-can icon above dead trees.
+    - **Uncle Manao's buttons:** `UncleStealPrompt` is enabled only while holding the picker, and `UncleWaterPrompt` only while holding the can. New `applyUnclePrompts`, run by the existing 0.3 s loop. The prompts are looked up in `workspace.Orchard.Decor`, cached, and searched again every 2 s if missing (streaming). `UncleManao` never sets `Enabled`, so the server and client do not fight.
+    - Steal buttons on players' lots (`StealPrompt`) already needed the picker in hand (`applySteal`), so they are unchanged.
+  - Check: the script compiles, the helpers are defined before they are used, and `applyUnclePrompts` is local. **Not play-tested.**
+  - Backup: `backups/OrchardGui_sections_before_toolGatedPrompts_20261118.lua`.
+
+- 2026-11-18 — Mango orchard lesson step 6/6 (user screenshots of Uncle's dry tree + the finish card): a watering-can icon over Uncle's dry tree, plus new watering and finish text. Studio only, not published.
+  - `StarterPlayer.StarterPlayerScripts.UncleManaoFx`: new block at the end. It adds a BillboardGui "UncleCanIcon" on Uncle's `WaterSpot` (found under `workspace.Orchard.Decor`, searched again every 1 s if missing).
+    - The image is `OrchardConfig.DeadTree.HelpIcon`, 56 px, with the same 0.7 s up-and-down tween as the plot `CanIcon` in OrchardGui. It sits 2.4 studs above the "🍂 ต้นแห้งของลุง" sign.
+    - It is shown only when `OrchardQuest == true` and `OrchardQuestWatered ~= true`, so only lesson players who still have to water see it.
+  - `StarterPlayer.StarterPlayerScripts.NewPlayerGuide`:
+    - Watering card: "ต้นไม้แห้งรอการช่วยเหลือ " + `slotText` (e.g. "กดช่อง 8 ถือบัวรดน้ำ ") + "ยืนใกล้ต้น กดปุ่ม F ค้างเพื่อรดน้ำ". English: "A dry tree needs help. Tap slot 8 to hold the watering can, stand by the tree and hold F to water it".
+    - Finish text, in both places in `finish()` (guideTo text + fallback card): "จบบทสอนแล้ว! ขโมยและช่วยเพื่อนๆ ได้เลย ไปรับรางวัลที่หุ่นนกฮูก" / "Lesson done! Go steal and help your friends. Claim your reward from the Robot Owl".
+    - The `multi_edit` replace_all flag did nothing, so the two finish lines were edited one at a time.
+  - Check: both scripts compile. The new finish text is in 2 places and the old one is gone. `WaterSpot` is used only by UncleManao. **Not seen in Play** (the icon only exists at runtime).
+  - Backup: `backups/UncleStep6_sections_before_canIconText_20261118.lua`.

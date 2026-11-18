@@ -178,3 +178,9 @@
    - ไม่แก้ `OrchardGui` (ท่าสอยขยับวนอยู่แล้ว อ่านแค่ `OrchardPickAt`) · ต้นโยกหลังขโมยสำเร็จ (`swayTree`) เหมือนเดิม
    - สำรองเฉพาะช่วงที่แก้ก่อนแก้ (`endAttempt`, `beginAttempt` บรรทัดตั้งท่า, `steal` ทั้งฟังก์ชัน, ตัว `Triggered` ของ `StealPrompt`) → `backups/OrchardService_steal_before_holdPose_<วันที่>.lua`
    - ทดสอบ: ทดสอบคนเดียวได้ด้วย `workspace.DevOrchardSelfSteal = true` (Studio) แต่ Play = DataStore จริง → ถามผู้ใช้ก่อนกดขโมยจริง · อย่างน้อยดูว่าไม่มี error + คอมไพล์ผ่าน
+
+## บทสอนสวนมะม่วง + ลุงมะนาว (2026-11-17, Studio เท่านั้น ยังไม่ได้ทดสอบใน Play)
+- **บทเรียน `orchard`** (หุ่นนกฮูก / แผง "?") นำทาง 4 ขั้น: ซื้อเมล็ดมะม่วง → ปลูกที่หลุมว่างใกล้สุด → ซื้อตะกร้อขโมย (ลงช่อง 4) → ขโมยมะม่วงลุง + รดน้ำต้นแห้งให้ลุง · ทุกขั้นมีปุ่ม ⚡ วาร์ปทันที · จบแล้วนำทางไปรับรางวัลที่หุ่นนกฮูก 10,000 + 300 EXP
+- **ลุงมะนาว** `workspace.UncleManao` (โมเดลชิบิ AI ชิ้นเดียว `OrchardTemplates.UncleManao.body_geom` แบบป้าแตงไทย · ชื่อ/ฟองคำทัก/หายใจ/หันมอง/ท่าพุ่งตบ = `StarterPlayerScripts.UncleManaoFx` อ่าน Attribute `DashTo`/`DashAt`) + `Orchard.Decor.UncleGarden` (ต้นสุก `MangoRipe` + ต้นแห้ง `MangoDead`) ข้างร้านผลไม้ ~(597, 45, -407) · สคริปต์ `ServerScriptService.Orchard.UncleManao`
+- คนที่ **ไม่อยู่ในเควส** ถือตะกร้อกดขโมย = ลุงเดินมาตบ (ล้ม 5 วิ ไม่เสียตะกร้อ) · คนในเควส = ขโมยได้ 1 ครั้งต่อบัญชี (ตะกร้อหาย 1 ได้มะม่วงจริง 1 ผล) · รดน้ำต้นแห้ง (F 3 วิ) เฉพาะคนในเควส ต้นเขียว 30 วิ
+- สถานะเควส: `LessonService` (Lessons_v1 `orchard.stole/watered`, BindableFunction `LessonService.OrchardQuest`) · "อยู่ในเควส" = กดเริ่มบทในรอบที่เล่นนี้ + บทยังไม่เสร็จ (กด X = ออกจากเควส)
