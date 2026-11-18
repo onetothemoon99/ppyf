@@ -3155,3 +3155,17 @@ Backups: `ServerStorage._IslandV5_Parked` (v4 pieces replaced in v5: SeaMask_v4,
 - Report: on low-spec / low-RAM devices, after a warp the E prompts (incubator) and fishing don't work "until the pets arrive". Cause: WarpService did PivotTo without streaming; PauseOutsideLoadedArea freezes the client until the area loads, and pets (server-leashed at 120 studs) show up at the same moment.
 - Fix: WarpService does `RequestStreamAroundAsync(pos, 6)` BEFORE moving (player waits in place; "🧭 กำลังไป…" after 0.4 s). Any new far teleport should do the same. `RequestStreamAroundAsync` can also be called from the client.
 - Same fix added 2026-11-16 to `OrchardService.warpToKeeper` and `TutorialGui.warpTo`. Option 3 (StreamingTargetRadius 1024 → ~512) waits for the user's decision.
+
+## backpack-safe-give (2026-11-18, Studio only)
+- Live error: collect at the pet food machine → "Backpack is not a valid member of Player". `player.Backpack` throws while the Backpack is being rebuilt (respawn) or after the player left. Real trigger: `save()` waits up to 7 s (WRITE_GAP), the player leaves meanwhile, then the give runs. Any "save/take first → give later" path loses the item.
+- Rule: never write `player.Backpack`. Use `ItemFactory.FindBackpack(player)` (no wait, nil if missing or left) to check BEFORE taking coins/items/saving, and `ItemFactory.GetBackpack(player)` (waits up to 5 s, then errors) when giving. Every `ItemFactory.Give*` calls GetBackpack before touching anything.
+- If a give can fail after a save (PetFoodConverter collect, AutoFeeder withdraw, ChickenService withdraw): pcall each give, add the failed part back to the store, save again, warn.
+- InventorySystem save already pcalls serializeInventory and skips the save when it fails (no bag wipe), so it was left as is.
+- Gift paths checked 2026-11-18. Fixed: LuckBoosterGift (give fails → delivered -= n back to the inbox), StarterGift and SultanService bundle (check bag before the claim; scarecrow first; fail → undo the claim, coins/tickets not given yet, retried on next join).
+- Already safe: AdminGive (pcall + back to pending), CompensationService (pcall + release claim), FishingShop gift rods and CraftBench rods (saved in data, restored on join), Robux receipts via PurchaseRouter (grant pcall → NotProcessedYet → retried).
+- Not covered: CraftBench refund (materials given back by GiveFish without pcall, only when crafting already failed), SultanService RewardPromoCode bandit pickers (OrchardItems.GiveHand, pcall only warns → lost).
+
+## overhead-title-pills (2026-11-18, Studio only)
+- Only `HelpTitle` (help-shop title) is a pill; the user wants VIP `Title` and `CropTitle` to stay plain floating text. The pill is built by `pillRow` in `PlayerNameTags`: the background is the child Frame `Bg` (UICorner/UIGradient/UIStroke), and the tag needs `ZIndexBehavior.Global`. A 2 px `HelpGap` spacer sits above it.
+- Styles live in `TITLE_STYLE` (kind/guardian/angel). The tier is `HELP_TIER[Id]` or the item's `TitleStyle` field, matched by title text (`helpStyleByText`, built by walking OrchardConfig for `Grant == "title"`).
+- `NameTagPrefs` STATUS_ROWS now include CropTitle/HelpTitle.
