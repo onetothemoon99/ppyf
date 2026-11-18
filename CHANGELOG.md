@@ -4758,3 +4758,238 @@
     - The `multi_edit` replace_all flag did nothing, so the two finish lines were edited one at a time.
   - Check: both scripts compile. The new finish text is in 2 places and the old one is gone. `WaterSpot` is used only by UncleManao. **Not seen in Play** (the icon only exists at runtime).
   - Backup: `backups/UncleStep6_sections_before_canIconText_20261118.lua`.
+- 2026-11-18 — Fix: pet food machine collect crashed and lost the bags (live error: "PetFoodConverter: คำขอ collect ของ kwanindy27 ผิดพลาด: Backpack is not a valid member of Player"). Cause: `ItemFactory.GivePetFood` used `player.Backpack` directly, which throws while the Backpack is being recreated (respawn) or the player is leaving. `collect` had already saved `ready = 0` before giving, so the bags were lost from the save.
+  - `ServerScriptService.ItemFactory` `GivePetFood`: finds the Backpack with `FindFirstChildOfClass`, waits up to 5 s for it, and errors clearly if it still isn't there. The new tool goes into that Backpack.
+  - `ServerScriptService.PetFoodConverter` `collect`: no Backpack → returns "bag not ready, try again" without touching the data. After the save, each star is given inside a `pcall`. Any star that fails (or the player left) goes back into `ready`, then it saves again and logs a warn. On a save failure, `ready` is added back instead of overwritten.
+  - Check: both scripts compile. Not play-tested (it needs a respawn at the moment of collect). The bags kwanindy27 already lost were NOT restored.
+  - Backups: `backups/PetFoodConverter_before_backpackfix_20261118.lua`, `backups/ItemFactory_before_backpackfix_20261118.lua` (byte size + checksum match Studio).
+  - Studio only, not published.
+- 2026-11-18 — Orchard stealing + watering-to-help: a later player on the same owner's lot is now as fast as the first (user: "การขโมยและการรดน้ำช่วยเหลือ ผู้ที่ทำทีหลังในแปลงเดียวกัน มันจะช้ากว่าคนแรก", chose plan A).
+  - Cause: the owner's orchard key can be written once per 6.5 s. `stealBatch` saved the owner before giving fruit, so a thief who arrived during a save waited for the next one (~6.5 s more; earlier test: 6.9 s vs 13.6 s). Helpers waited while `busy[owner]` (a steal or harvest save), and a help's `SaveLater` also pushed the next steal save back.
+  - `ServerScriptService.Orchard.OrchardService`:
+    - New `outsideEdit(st, fn)` (below `commit`): applies a steal or help to the owner's data in memory right away. `commit` now records these edits while it waits to save (`st.openCommits`). If that save fails, it restores the old data, replays the edits so they aren't lost, and calls `SaveLater`.
+    - `steal()`: after all checks it takes the picker, takes the fruit from the owner in memory (`applySteal`), gives the fruit, and saves the owner with `SaveLater`. Removed `stealBatch`, `runStealBatch`, `joinStealBatch`, `STEAL_BATCH_WAIT`, `STEAL_SAVE_WAIT` and the "⏳ กำลังเก็บผล..." wait text. The same-tree lock, slap, cooldown and once-per-round rules are unchanged.
+    - `helpTree()`: no longer waits for `busy[owner]` (removed `HELP_BUSY_WAIT`). The revive goes through `outsideEdit`.
+    - Dev command `OrchardDev "stealbatch"` now uses `applySteal`. `b = "replay"` simulates a failed owner save (`DevOrchardFailSave`) during the steals.
+  - Trade-off: if the server dies within a few seconds of a steal, before the owner is saved, the thief keeps the fruit and the owner's tree still has it (1 extra fruit). No coins are duplicated. A help has the same window as before.
+  - Play-tested (Studio, test key, player as owner, no real thieves): 4 steals at once → all done at 0.00 s, 3→2 fruits each, one save at 5.5 s. Replay test: the owner commit failed (its mark rolled back) and both steals stayed (3→2). The periodic `SaveLater` loop retries dirty data. Not tested with real players. Next: Team Test with 2–3 accounts stealing/watering one owner's lot.
+  - Test data left: test-key orchard (Lot19) holes 2–5 are ripe with 2 fruits, stolen=1.
+  - Backup: `backups/OrchardService_before_instantStealHelp_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — Follow-up to the pet food machine fix: no item loss when the Backpack is missing (respawn / leaving), across the other give paths.
+  - `ServerScriptService.ItemFactory`: new `FindBackpack(player)` (no wait) and `GetBackpack(player)` (waits up to 5 s, then errors). Every `Give*` (pet food, fish incl. junk merge, rod, bait, booster) uses `GetBackpack` before touching anything, so a failure gives nothing and changes nothing.
+  - `ServerScriptService.AutoFeeder` withdraw and `ServerScriptService.ChickenFarm.ChickenService` `actions.withdraw`: same fix as PetFoodConverter. No bag → "try again" with no change. After the save each star is given inside a `pcall`, and any failed star is put back into the bowl/trough and saved again (warn in log). On an AutoFeeder save failure the bags are added back (+=) instead of overwritten.
+  - `ServerScriptService.ShopSystem` buySeed: checks the bag before taking coins. Item lookups use `FindFirstChildOfClass("Backpack")`, and new seed stacks go in via `GetBackpack`.
+  - `ServerScriptService.FishingShop` makeBait: checks the bag before removing produce.
+  - `ServerScriptService.PlantingSystem` doHarvest: no bag → doesn't harvest (the plant stays). Produce lookup and new stacks are safe.
+  - `InventorySystem` not changed: its save already skips when the bag can't be read, so it doesn't save an empty bag.
+  - Check: all 6 scripts compile. Edit-mode test of `GetBackpack` with a stand-in player: left game → errors at once, no bag → errors after 5.0 s, bag appears after 1 s → returned at 1.1 s. Not tested in Play: the put-back paths in AutoFeeder/ChickenService, or shop/harvest during a real respawn.
+  - Still to check: gift/inbox paths that mark "delivered" before giving (LuckBoosterGift, StarterGift, AdminGive, CompensationService, SultanService bundle, CraftBench, FishingShop gift rods).
+  - Backups (byte size + checksum match Studio): `backups/{ItemFactory,AutoFeeder,ChickenService,ShopSystem,FishingShop,PlantingSystem}_before_backpacksafe_20261118.lua`.
+  - Studio only, not published.
+- 2026-11-18 — Gift paths: no lost gifts when the Backpack is missing (follow-up to the Backpack fix). Three places marked a gift as delivered before giving, so a failed give lost it for good:
+  - `ServerScriptService.LuckBoosterGift` deliver (golden scarecrow gifts bought with Robux, promo codes): no bag → doesn't touch the inbox (delivered next join). Give is in a `pcall`. If it fails or the player left, `delivered -= n` puts it back in the inbox. Before, a player who left right after the inbox update lost the gift silently.
+  - `ServerScriptService.StarterGift`: checks coins + bag before marking given. Gives the scarecrow first. If that fails, sets `given = false` and gives no coins (full gift on the next join). Before, a missing coins value after the claim lost the whole gift.
+  - `ServerScriptService.SultanService` giveBundle (Sultan pack): checks the bag before claiming `bundleGiven`. Gives the x100 scarecrows first. If that fails, clears `bundleGiven` and gives no tickets/coins (whole bundle on the next join).
+  - Checked and already safe: AdminGive (pcall + back to pending), CompensationService (pcall + release), FishingShop gift rods / CraftBench rods (in save data, restored on join), Robux receipts via PurchaseRouter (retried).
+  - Not covered: CraftBench refund path (GiveFish without pcall, only after a craft already failed) and SultanService reward-code bandit pickers (OrchardItems.GiveHand, failure only warns).
+  - Check: all 3 scripts compile. Not tested in Play (needs a gift at the moment of respawn/leave).
+  - Backups (byte size + checksum match Studio): `backups/{LuckBoosterGift,StarterGift,SultanService}_before_giftsafe_20261118.lua`.
+  - Studio only, not published.
+- 2026-11-18 — Pet food machine: collect sometimes "doesn't work" while the machine is cooking (user report). Causes and fixes:
+  - `ServerScriptService.PetFoodConverter` request handler:
+    - `info` no longer takes the machine lock and always returns machine info. Before, while the chicken farm (PetFoodBridge take) or another request held the lock, polls got "still working" with no info, so the window froze.
+    - insert/collect/upgrade wait up to 15 s for the lock instead of being refused at once with "กำลังทำรายการก่อนหน้าอยู่". After 15 s: "machine busy", with info.
+    - A collect that fails or takes > 3 s writes a warn with time, queue wait, ready/queued counts, auto-bowl flag and message (F9 → Server) to find the cause live.
+  - `PetFoodConverter` 2 s loop: no transfer to the auto-bowl while a request is running. Before, the bags the player saw could go into the bowl after tapping collect → "ยังไม่มีอาหารที่ทำเสร็จ".
+  - `StarterPlayer.StarterPlayerScripts.PetFoodGui`:
+    - The collect button also checks `PetFoodReady` (set by the server every 2 s). A change in it triggers an info refresh on the next frame (was every 3 s), so a just-finished bag can be collected straight away. A tap with nothing to collect now shows why (auto-bowl or not yet done) instead of doing nothing.
+    - A request taking > 2 s shows "⏳ กำลังบันทึก รอสักครู่ (ไม่ต้องกดซ้ำ)". The save before giving can wait up to ~7 s (Roblox key write limit). That wait stays: saving first prevents duplicate bags.
+  - Check: both scripts compile. Not tested in Play (cooking + collect on the real account would write real data).
+  - Backups (byte size + checksum match Studio): `backups/PetFoodConverter_before_collectwhilecooking_20261118.lua`, `backups/PetFoodGui_before_collectwhilecooking_20261118.lua`.
+  - Studio only, not published.
+- 2026-11-18 — Orchard harvest: each tree is picked at once, so the 2nd and 3rd trees in a row are no longer slower (user: "ตอนเก็บด้วย", chose plan A "เก็บทันที").
+  - Cause: `actions.harvest` used `commit`, which saved the orchard before giving fruit and waited for the key's save slot (one write per 6.5 s). The 2nd/3rd tree waited ~6.5 s each (save fail after 10 s). Pressing the next tree during that wait got "ใจเย็นๆ รออีกนิดนะ" (`busy`). A recent steal/help `SaveLater` could also delay the owner's harvest.
+  - `ServerScriptService.Orchard.OrchardService` `actions.harvest`: the tree goes to its next round in memory through `outsideEdit` (replayed if another owner save fails), the fruit is given at once, and the orchard is saved with `SaveLater`. `steal()`: the thief's fruit is also marked unsaved until the owner's orchard save succeeds. New Studio dev command `OrchardDev "unsaved"` (a = "2,3") shows the unsaved flag and tree fruit/harvests.
+  - Anti-duplication: `ServerScriptService.Orchard.OrchardData` new `MarkUnsavedFruit(player, source)` / `HasUnsavedFruit(player)`. `Save` now records `lastOkWriteAt` (start time of the last successful save). Fruit is "unsaved" until a save of the source orchard that started after the harvest/steal succeeds (or after 120 s). `ServerScriptService.ShopSystem` refuses selling orchard fruit while unsaved: "💾 กำลังบันทึกผลไม้ ลองขายอีกครั้งในไม่กี่วินาที".
+  - Trade-off: if the server dies before the save, the tree is still ripe on rejoin (pick again). Duplication is only possible if the bag is saved by something else in that ≤6.5 s window and then the server dies.
+  - All three scripts compile. NOT play-tested yet: Studio's Play button stopped responding to MCP ("Start play hasn't finished yet").
+  - Backup: `backups/Orchard_before_instantHarvest_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — Orchard harvest: fixed the reach pose that stayed on forever when the player was holding something while harvesting (user: "ถ้าถือของอะไรอยู่แล้วกดเก็บมะม่วงมันบัคท่าเก็บตลอดเลย ให้ถ้าถืออะไรอยู่ยกเลิกถือแล้วเก็บมะม่วง").
+  - Likely cause (not reproduced): the pose (`OrchardHarvestAt`) starts at hold-begin and was only cleared by the server's hold-ended or triggered signal. With a tool held, a signal could be missed, and nothing else cleared it.
+  - `ServerScriptService.Orchard.OrchardService` HolePrompt `PromptButtonHoldBegan` (ripe tree, owner): if a tool is held, `Humanoid:UnequipTools()` puts it back in the bag first, then the reach pose starts. New safety: the pose from holding alone ends by itself after `REACH_HOLD_MAX` = 3 s (the hold is 0.6 s) and ends at once if a tool is equipped during the hold. The harvest pose after a completed hold (`harvesting`) is unchanged.
+  - Compiles. NOT play-tested (Studio Play still not responding to MCP). To check: hold any item, harvest your own ripe tree → item goes to the bag, pose ends after the pick.
+  - Backup: `backups/OrchardService_before_harvestPoseToolFix_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — Orchard dead-tree cut is instant, so the 2nd tree cut in a row is no longer slower (user: "ตอนตัดไม้ด้วย"; same plan A as harvest).
+  - Cause: `actions.cut` used `commit`, which waited for the orchard save slot (one write per 6.5 s) before giving wood and felling the tree.
+  - `ServerScriptService.Orchard.OrchardService` `actions.cut`: the dead tree is removed in memory through `outsideEdit` (only if it is still dead), then `SaveLater`. Wood is given and the tree falls at once.
+  - Trade-off: if the server dies before the save, the dead tree is back on rejoin and can be cut again, giving extra wood (`DeadTree.WoodPerCut`). Wood use is not blocked while unsaved, unlike fruit selling, because wood only becomes fertilizer.
+  - Compiles. NOT play-tested (Studio Play still not responding to MCP).
+  - Backup: `backups/OrchardService_before_instantCut_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — Orchard watering-help: the pour (tilted can + water + water sound) no longer stays on forever (user: "เรื่องท่าตัวละครตอน เก็บเกียว ตัดไม้ รดน้ำ บางทีท่าค้าง" → "แก้รดน้ำเลย").
+  - Likely cause (from code, not reproduced): the pour started at hold-begin and stopped only on the server's hold-ended or triggered signal. The HelpPrompt can vanish mid-hold (someone else revives the tree first → `CanHelp` off → the client disables the prompt; walking out of range; dismounting; dying), and then the stop could be missed. The can stayed tilted, even after unequip/re-equip, until the next pour.
+  - `ServerScriptService.Orchard.OrchardService` HelpPrompt `PromptButtonHoldBegan`: after `startPour` the server now also stops the pour by itself after the prompt's `HoldDuration` + 1 s, when the can leaves the character, and when `CanHelp` turns off. This also covers the elephant trunk spray (only the timer and `CanHelp` apply). `stopPour` disconnects these watchers.
+  - Compiles. NOT play-tested (Studio Play still not responding to MCP).
+  - Backup: `backups/OrchardService_before_pourStuckFix_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — Orchard fertilize is instant, so the 2nd tree fertilized in a row is no longer slower (user: "แก้ตอนใส่ปุ๋ยด้วย"; same plan A as harvest/cut).
+  - Cause: `actions.fertilize` used `commit`, which waited for the orchard save slot (one write per 6.5 s) before replying. The fertilize pose itself already ends after `FERT_POSE_TIME` 1.6 s and the tap has no hold, so it cannot stick.
+  - `ServerScriptService.Orchard.OrchardService` `actions.fertilize`: the tree time shift (`plantedAt`/`cycleStart` −`FertilizerSeconds`, `fed`) is applied in memory through `outsideEdit` (skipped if the tree changed or was already fed this round), then `SaveLater`. The "save failed → give fertilizer back" path is gone.
+  - Trade-off: if the server dies before the orchard save, the fertilizer is used up but the tree is not sped up (a 1-fertilizer loss, no dupe).
+  - Compiles. NOT play-tested (Studio Play still not responding to MCP).
+  - Backup: `backups/OrchardService_before_instantFertilize_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — Live warning "DataStore request was added to queue … Key = 12017078472" (player ppooqq273). The warning doesn't name the store. These fixes target the stores most likely to write the same key twice within 6 s:
+  - `ServerScriptService.LeaderstatsSetup` saveCoins (`PlayerCoins_v1`): writes are spaced ≥ 7 s per UserId (`COIN_WRITE_GAP`), and retries respect the gap too (before: 1–2 s backoff). The coin value is read right before the write, not before the wait. The wait for a save already running went 12 → 30 s. The failure warn now names the store + key.
+  - `ServerScriptService.StarterGift` and `ServerScriptService.SultanService` (coin promo code): no direct `SetAsync` to `PlayerCoins_v1`. They fire `LeaderstatsSetup.SaveCoinsNow` instead, so every coin write uses the same gap. A direct write remains only as a fallback if that event is missing.
+  - `ServerScriptService.PetSystem.PetManager` saveSettings (`PetSettings_v1`): serializes first, waits for any running write, then keeps ≥ 7 s since the last write (`SETTINGS_WRITE_GAP`). The later write always has the newer data. Before, a scheduled save (5 s delay) followed by leaving wrote the key twice within 6 s. BindToClose now saves all players in parallel and waits up to 25 s, so per-player gaps don't add up past the 30 s shutdown limit. The failure warn names the store + key.
+  - Not changed: LevelSystem (an autosave that lands right as the player leaves can still queue once, harmless), and the other ~80 per-UserId stores.
+  - Check: all 4 scripts compile. Not tested in Play.
+  - Backups (byte size + checksum match Studio): `backups/{LeaderstatsSetup,StarterGift,SultanService,PetManager}_before_writegap_20261118.lua`.
+  - Studio only, not published.
+
+## 2026-11-18 — Egg badge "ตำนานไข่ทองคำ" now needs 200,000 eggs
+- `ReplicatedStorage.AchievementConfig` egg tier 6 (badge 1058059020099946): `need` 1,000,000 → 200,000 (user's order). A full coop of 10 rainbow 5★ hens lays 2,400 eggs a day, so the best case is about 83 days. Players already at 200,000 or more get the badge and the 5,000,000 coins on the next `syncEggs` (every 10 s).
+- Badge art: `art/badges/png/egg_6_200K.png` (+ svg), same design with the label "200,000". `generate.js` now has the `egg_6_200K` entry and an `ONLY=<file>` env var that renders one badge without remaking the preview. The old `egg_6_1M.png` is kept.
+- Not done yet: the user has to upload the new icon and update the description on Creator Dashboard. After that, set the new `iconImageId` in `image` (still 92270819835750, the 1M art).
+- `ACHIEVEMENTS.md` table updated.
+- Backup: `backups/AchievementConfig_before_egg200k_20261118.lua`.
+- Studio only, not published.
+- Follow-up 2026-11-18: the user uploaded the 200K icon on Creator Dashboard. `AchievementConfig` egg tier 6 `image` 92270819835750 → 120084808464643 (from the badges API `iconImageId`). The Thai description is now 200,000, but the English `displayDescription` still says "1,000,000 eggs". Studio only, not published.
+- 2026-11-18 — เหรียญตรารอบ 7 สวนผลไม้ (ผู้ใช้กำหนด ขโมยสำเร็จ 50/200/500 และช่วยรดน้ำเพื่อน 50/200/500, สั่ง "ใช้ใน dev แค่ 6 อันล่าสุด"): วาดรูป 6 ตราใน `art/badges/generate.js` (หมวดใหม่ `help` พื้นสวนเขียว + บัวรดน้ำ ฟ้า/เขียวหัวใจ/ทองมงกุฎ, `steal` พื้นกลางคืน + ตะกร้อสอยมะม่วง หน้ากากโจร มงกุฎ; gradient `orchard` `night` `mango`, ฟังก์ชัน `drop` `wateringCan` `mango` `picker` `thiefMask`) ได้ `art/badges/png/help_1_50.png`, `help_2_200.png`, `help_3_500.png`, `steal_1_50.png`, `steal_2_200.png`, `steal_3_500.png` · ร่างชื่อ รางวัล 350k/750k/1.5M ต่อหมวด และจุดนับ (`help.total`, `stats.stole`) ใน `ACHIEVEMENTS.md` · ไฟล์ svg เก่าเปลี่ยนแค่มี gradient ใหม่ในส่วน defs — ไฟล์ในโปรเจกต์เท่านั้น ยังไม่ได้สร้างตราบน Dashboard ยังไม่แก้ Studio ยังไม่ได้ Publish
+- 2026-11-18 — เหรียญตรารอบ 7 สวนผลไม้ เข้า config (ใช้ใน dev เท่านั้น): ผู้ใช้สร้าง 5 ตราบน Dashboard แบบปิดไว้ (เช็ก API แล้ว อยู่ในเกมนี้ enabled=false) · `ReplicatedStorage.AchievementConfig` เพิ่มหมวด `help` (ช่วยรดน้ำเพื่อน 50/200/500 = 350k/750k/1.5M) และ `steal` (ขโมยสำเร็จ 50/200 = 350k/750k ขั้น 500 รอสร้าง) ทั้งสองมี `devOnly = true` + ท้ายไฟล์ลบหมวด devOnly ทิ้งเมื่อไม่ใช่ Studio (เซิร์ฟจริงไม่นับ ไม่มอบ ไม่จ่าย ไม่แสดง 31 ตราเดิมไม่กระทบ) · `ServerScriptService.AchievementService` เพิ่ม `syncOrchard` (ตั้งยอดจาก `OrchardData` `help.total` / `stats.stole` ทุก 10 วิ ได้ยอดย้อนหลัง) · สำรอง `backups/AchievementConfig_before_orchardLines_20261118.lua`, `backups/AchievementService_before_orchardLines_20261118.lua` (ตรงกับ Source เดิมทุกไบต์) · คอมไพล์ผ่าน 36 ตรา (dev 5) ยังไม่ได้ทดสอบใน Play (MCP สั่ง Play ไม่ได้) — Studio เท่านั้น ยังไม่ได้ Publish
+- 2026-11-18 — เหรียญตรารอบ 7 สวนผลไม้: ทดสอบใน Play ผ่าน (ผู้ใช้กด Play เอง, คีย์ปลอม `AchTest_20261105_a`): `syncOrchard` ดึงยอดช่วยรดน้ำ 130 จากข้อมูลสวนใน Studio ได้ตราแรกทันที, `DevAchievementAdd` help/steal ได้ครบ 5 ตรา จ่ายรวม 3,700,000 ตรงยอด หน้าต่าง Earned 36/36 มีสองหมวดใหม่ รูปโหลดได้ · หักเหรียญทดสอบคืนแล้ว (226,028,693) · อัปเดต `ACHIEVEMENTS.md` (ตาราง Badge/Icon ID, สถานะ devOnly, ผลทดสอบ) — Studio เท่านั้น ยังไม่ได้ Publish, สองหมวดนี้เป็น devOnly ตราบน Dashboard ยังปิด
+- 2026-11-18 — สวนผลไม้: เซฟกระเป๋าหลังสวนเซฟเสร็จ กันได้ผลไม้ซ้ำถ้าเซิร์ฟล่ม (ผู้ใช้สั่ง "แก้เลย" หลังตรวจอัปเดตรอบนี้)
+  - สาเหตุ: หลังแก้ "เก็บ/ขโมยทันที" วันนี้ `actions.harvest` และ `steal()` เซฟกระเป๋าทันทีหลังให้ผล แต่สวนต้นทางเซฟตามหลัง (`SaveLater` ≤ ~6.5 วิ) ถ้าเซิร์ฟล่มในช่วงนั้น = ผลอยู่ในกระเป๋า แต่ต้นยังสุก เก็บ/ขโมยซ้ำได้ (ใน entry instantHarvest เขียนว่า "ซ้ำได้เฉพาะถ้าระบบอื่นเซฟกระเป๋า" ซึ่งไม่ตรง เพราะการเก็บเองเป็นตัวสั่งเซฟ)
+  - `ServerScriptService.Orchard.OrchardService`: ฟังก์ชันใหม่ `saveBagAfterFruitSaved(player)` (ใต้ `saveBag`) ถ้ายังมีผลที่สวนต้นทางยังไม่เซฟ (`OrchardData.HasUnsavedFruit`) จะรอทีละ 1 วิ จนสวนเซฟสำเร็จ (สูงสุด ~130 วิ) แล้วค่อยเซฟกระเป๋า ไม่มีผลค้าง = เซฟทันทีเหมือนเดิม ต่อคนรอได้ทีละ 1 งาน ใช้แทน `saveBag` ใน `actions.harvest` และ `steal()` (เจ้าของปลอมใน Studio ไม่มี unsaved = เซฟทันที)
+  - ข้อแลก: ถ้าเซิร์ฟล่มก่อนสวนเซฟ ผลที่เพิ่งได้ (และตะกร้อที่ใช้ขโมย) จะไม่อยู่ในกระเป๋า แต่ต้นยังสุก เก็บใหม่ได้ · ออกเกมระหว่างรอ = InventorySystem เซฟกระเป๋าตอนออกตามปกติ · autosave กระเป๋าของ InventorySystem ยังอาจเซฟก่อนได้ (เหมือนเดิม)
+  - เช็ก: คอมไพล์ผ่าน ฟังก์ชันประกาศ (บรรทัด 135) ก่อนใช้ (968, 2723) แก้ด้วย `ScriptEditorService:UpdateSourceAsync` (สคริปต์ยาวเกิน 200k) **ยังไม่ได้ทดสอบใน Play**
+  - สำรอง: `backups/OrchardService_sections_before_bagAfterOrchardSave_20261118.lua` (section backup)
+  - Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-18 เปลี่ยนชื่อตราขโมยผลไม้ (หมวด `steal`, devOnly) ตามที่ผู้ใช้สั่ง
+  - `ReplicatedStorage.AchievementConfig`: ขั้น 50 "จอมสอยมะม่วง / Mango Snatcher" → "โจรฝึกหัด / Apprentice Thief" · ขั้น 200 "โจรสวนผลไม้ / Orchard Bandit" → "หัวหน้าโจร / Thief Boss" (Badge ID, รูป, รางวัลเหมือนเดิม) อัปเดตตารางใน `ACHIEVEMENTS.md`
+  - เช็ก: require config ผ่าน อ่านชื่อใหม่ได้ · ชื่อตราบน Creator Dashboard ผู้ใช้ต้องแก้เอง (เกมแสดงชื่อจาก config)
+  - สำรอง: `backups/AchievementConfig_before_stealRename_20261118.lua`
+  - Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-18 ซ่อนจุดแดงและป้าย "ใหม่!" ของฟาร์มไก่ที่ผู้เล่นใหม่เห็นตรงวาป (ผู้ใช้สั่ง)
+  - `StarterPlayer.StarterPlayerScripts.MoreMenuGui` `refreshMoreDot`: `chickenNew = false` → ไม่มีจุดแดงจาก ChickenNew ที่ปุ่ม ☰ และรายการ 🧭 วาป (จุดแดงปลาใหม่ / สมุดพืชยังทำงานเหมือนเดิม)
+  - `StarterPlayer.StarterPlayerScripts.WarpGui`: `SHOW_CHICKEN_NEW = false` → ไม่สร้างป้าย "ใหม่!" แถวฟาร์มไก่
+  - ฝั่งเซิร์ฟเวอร์ (`ChickenService` ตั้ง Attribute `ChickenNew`) ไม่ได้แก้
+  - เช็ก: คอมไพล์ผ่านทั้ง 2 สคริปต์ **ยังไม่ได้ทดสอบใน Play**
+  - สำรอง: `backups/MoreMenuGui_before_noChickenNew_20261118.lua`, `backups/WarpGui_before_noChickenNew_20261118.lua` (ซอร์สเต็ม)
+  - Studio เท่านั้น ยังไม่ได้ Publish
+- 2026-11-18 — Play test (the user pressed Play; server-side dev commands only, no real clicks; owner One_moretime91, Lot19) of today's orchard changes:
+  - instantHarvest: `OrchardDev "stealbatch" "2,3,4" "prep"`, then `"run" "harvest"` on holes 2/3/4 in a row: each 0.00–0.01 s (before: ~6.5 s wait per tree after the first), bag fruit 187 → 196, harvests 2 → 3. `unsaved=true` right after, `false` after the next save (≤ 0.5 s later in this run). PASS. The shop sell refusal itself was not clicked.
+  - instantCut: axe equipped on the server, `"run" "cut"` on holes 3 and 4 in a row: 0.00 s each, wood 40 → 44. PASS. Holes 3/4 of the test lot are now empty (hole 2 is dead).
+  - instantFertilize: `"run" "fertilize"` on hole 5: 0.00 s, fertilizer 5 → 4; a 2nd fertilize on the same round was refused. PASS.
+  - harvestPoseToolFix and pourStuckFix: NOT tested. They need a real prompt hold, which only the user can do by hand.
+  - Nothing changed in scripts by this test. Studio only, not published.
+- 2026-11-18 — The user tested harvestPoseToolFix and pourStuckFix by hand in Play: "ลองแล้ว ไม่ค้าง" (no stuck pose). PASS by user report. Studio only, not published.
+- 2026-11-18 — Live warning "DataStore request was added to queue … Data Store = LevelLeaderboard_v1". Cause in `ServerScriptService.LevelBoard` `writeLevel`: the same UserId key could be written again within 6 s. Three ways: retries 2 s / 4 s after a failure; leave-game (`PlayerRemoving`) and server close (`BindToClose`) writing the same player at once; and the 120 s loop starting while a retry was still running.
+  - Fix (writeGap): one write per player at a time (`writing`). Every request for a key, retries included, is ≥ `KEY_GAP` = 7 s after the previous one (`lastWriteAt`). A second call waits for the running one and then skips if the level is already written. `PlayerRemoving` no longer clears `written`, so `BindToClose` does not rewrite the same level.
+  - Compiles. Not play-tested (needs a level change + live DataStore).
+  - Backup: `backups/LevelBoard_before_writeGap_20261118.lua` (full Source, byte-identical).
+  - Studio only, not published.
+- 2026-11-18 — Orchard: planting a fruit tree now gives EXP (user: "เพิ่ม exp ตอนปลูกผลไม้ด้วย", chose "ตามราคาเมล็ด"). Before, the orchard gave no EXP at all.
+  - `ReplicatedStorage.OrchardConfig` new `Trees[kind].PlantXP`: Mango (Monthong, seed 10k) = 300, Durian (seed 2M, not open yet) = 1500. 0/nil = no EXP.
+  - `ServerScriptService.Orchard.OrchardService` `actions.plant`: after a successful plant, `LevelSystem.AddXP(player, PlantXP)` (not for fake owners). The reply ends with " · +300 EXP". The lesson instant-grow tree gets it too. `LevelSystem`'s 10-minute cap and cheat check still apply.
+  - Note: dig up + replant gives EXP again, but each plant uses a seed (10k coins for 300 EXP), so it is a coin-to-EXP trade, not free EXP.
+  - Both scripts compile; config loads with the new values. Not play-tested.
+  - Backup: `backups/Orchard_before_plantXP_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — Orchard: cutting tree 2 right after tree 1 no longer warps the player back to hole 1 (user report: "ตัดต้นที่ 1 เสร็จ ไปตัดต้น 2 ต่อ แต่ วาปมาตรงหลุมที่ ต้นที่ 1"; plan approved "แก้ตามแผน").
+  - Cause (from code + hole spacing, not reproduced): at hold-begin the server turned the player to the tree with `root.CFrame = CFrame.lookAt(root.Position, …)`. The character is client-owned, so the server's `root.Position` lags 0.1–0.3 s. Holes are 10 studs apart and the prompt reaches 9 studs, so tree 2's prompt shows almost as soon as the player leaves tree 1. The server write snapped the player back to where they stood at tree 1. Watering-help (can and elephant trunk) and Uncle Manao's tutorial watering had the same write.
+  - Fix (faceOnClient): `ServerScriptService.Orchard.OrchardService` new `faceHole(player, pos)` sets Character attribute `OrchardFaceAt` for `FACE_TIME` 0.3 s. It replaces the server CFrame writes in `startChop`, `startTrunkPour` and `startPour`. `ServerScriptService.Orchard.UncleManao` `startPour` does the same. `StarterPlayer.StarterPlayerScripts.OrchardGui` PreSimulation facing now also reads `OrchardFaceAt`, and turns again when the target hole changes (`faced.at`). Fake guard/crowd NPCs keep server facing (server-owned, no lag).
+  - All three scripts compile. Not play-tested yet.
+  - Backup: `backups/Orchard_before_faceOnClient_20261118.lua` (section backup).
+  - Studio only, not published.
+- 2026-11-18 — The user tested faceOnClient by hand in Play: cut tree 1, then tree 2 right away → "ลองแล้ว ไม่วาป" (no warp). PASS by user report. Studio only, not published.
+- 2026-11-18 — Overhead title pills, plan B (user chose "แบบ B").
+  - `ServerScriptService.PlayerNameTags`: the title rows `Title` (VIP), `CropTitle` and `HelpTitle` are now pills. Each row is a TextLabel that sizes to its text (max 212 px, then "…"), with a child Frame `Bg` 10 px wider on each side (UICorner 0.5, UIGradient, UIStroke 1.5). The tag uses `ZIndexBehavior.Global`, so `Bg` (ZIndex 2) sits under the text (ZIndex 3).
+  - Colours come from `TITLE_STYLE`. HelpShop titles go by tier: 💚 kind = green, 🌳 guardian = green→gold, 👼/😇 300 = blue→gold with a gold border. The tier is found by Id (`HELP_TIER`), and a new HelpShop item can set `TitleStyle`. 🌾 crop = brown→green. A VIP plain colour gets a dark tint of the chosen colour with that colour as the border; rainbow gets dark purple→blue; sultan colours get purple→gold.
+  - Row heights are 24/22 px (room for Thai marks above and below), list padding is 3, and the billboard height is 145 (was 120). No Highlight and no per-frame code.
+  - `StarterPlayer.StarterPlayerScripts.NameTagPrefs`: "ซ่อนสถานะบนหัว" now also hides `CropTitle`/`HelpTitle` (STATUS_ROWS, wanted() and OWNER_ATTRS).
+  - Tested in Studio Play on the user's own tag (Sultan + pink VIP title + 😇 เทพบุตรใจบุญ): both pills show as planned. The hide-status toggle, phone and crop title were not tested.
+  - Backups: `backups/PlayerNameTags_before_titlebg_20261118.lua`, `backups/NameTagPrefs_before_titlebg_20261118.lua` (checksums match Studio).
+  - Studio only, not published.
+- 2026-11-18 — Only the help-shop title gets a pill now (user: "ใส่พื้นหลังแค่ ฉายาที่แลกด้วย น้ำใจเท่านั้น อันอื่นเหมือนเดิม").
+  - `ServerScriptService.PlayerNameTags`: VIP `Title` and `CropTitle` are plain floating text again, as before (sizes 20/18, original colours, list padding 1, no pill styling). Removed the crop/rainbow/sultan styles and `vipPlainStyle`.
+  - `HelpTitle` keeps its tier pill. A new invisible 2 px spacer `HelpGap` (LayoutOrder 6, shown only with the title) sits above it, and `HelpTitle` moved to LayoutOrder 7. Billboard height is 126.
+  - The `NameTagPrefs` hide-status fix stays.
+  - Tested in Studio Play: the VIP title has no background, and 😇 เทพบุตรใจบุญ shows in its blue→gold pill.
+  - Backup: `backups/PlayerNameTags_before_helpOnlyPill_20261118.lua` (checksum matches Studio).
+  - Studio only, not published.
+
+## 2026-11-18 — Plan: coin EXP scarecrow (doc only)
+  - New plan file `EXP_SCARECROW.md`: coin EXP scarecrow, radius 15, 5 min. The owner gets +50% XP and others standing in the ring get +25% (highest one counts, no stacking). Covers crops, fishing, otter catches, egg sales and dirt sweeping. Lessons, orchard planting and one-off chicken XP are excluded.
+  - Lists the spots that must skip EXP scarecrows so they don't act as luck scarecrows (`LuckConfig.GetBoosterLuckAt`, `FarmSlotRegistry.getActiveBoosters`, `ItemFactory.BOOSTER_NAME_KEY`), and the XP cheat cap must count XP before the bonus.
+  - Nothing changed in Studio. Not published.
+
+## 2026-11-18 — EXP scarecrow model (Blender, not in Studio yet)
+  - New `art/xp_scarecrow/build_xp_scarecrow.py` builds a cartoon scarecrow: red shirt (user asked for red instead of blue), navy overalls, straw hat with a blue band and a gold star, and a blue sign with gold "EXP" letters on the pole. It is 7 studs tall, 14 colour parts and 4,160 triangles. The front faces Blender +Y, which becomes the Roblox LookVector.
+  - Output: `art/xp_scarecrow/XpScarecrow.glb` + `preview.png`. Not uploaded to Roblox and not in Studio yet. Not published.
+
+## 2026-11-18 — EXP scarecrow model in Studio (holds the EXP sign)
+  - The user asked for the scarecrow to hold the sign. The right arm is now raised 30° with a straw fist gripping a wooden stick, and the blue/gold "EXP" sign sits on top of the stick beside the head. The crossbar now runs under the left arm only. Built by `art/xp_scarecrow/build_xp_scarecrow.py`; the model is 7.4 studs tall and 6.8 wide, with 4,168 triangles. `preview.png` was updated.
+  - Uploaded to group 642396060. v1 (sign on the pole) is asset 109628776192113 and is not used. v2 is asset 131681437689249.
+  - New `ServerStorage.BoosterTemplates.XpScarecrowTemplate`: Model > `body` with 14 coloured MeshParts (SmoothPlastic, anchored, collide/query as in QualityBoosterTemplate). The pivot is at the pole base with an identity rotation, so the face is the LookVector (−Z), which was checked by numbers. The PackageLink was removed.
+  - Studio screen_capture returned a blank white image, so the model was not checked by eye in Studio. Nothing uses the template yet (no config tier). Studio only, not published. No backup needed (new object only).
+
+## 2026-11-18 — EXP scarecrow sign now reads "x1.5"
+  - The user asked for the sign text to change from "EXP" to "x1.5" (`art/xp_scarecrow/build_xp_scarecrow.py`, 4,336 triangles, `preview.png` updated). It was uploaded as asset 71052820069959 (v3). v2 (131681437689249) is no longer used.
+  - `ServerStorage.BoosterTemplates.XpScarecrowTemplate` was replaced with v3. It has the same 14 coloured parts, the pivot is at the base and the front is −Z (checked by numbers).
+  - `EXP_SCARECROW.md` now writes the bonus as owner x1.5 / others x1.25. Still not used by any code. Studio only, not published.
+
+## 2026-11-19 — EXP scarecrow plan: price 40,000, owner x1.5, others x0.75
+  - Per the user: the coin EXP scarecrow costs 40,000 coins. The owner gets x1.5 XP and other players in the ring get x0.75. The plan notes that x0.75 means 25% LESS XP than normal (so players could use it to cut others' XP), and that is waiting on the user's confirmation (`EXP_SCARECROW.md`).
+  - Doc only. Nothing changed in Studio. Not published.
+
+## 2026-11-19 — EXP scarecrow plan: others in the ring get x1.25
+  - The user confirmed that other players in the ring get half the owner's bonus: x1.25 (+25%), not x0.75. The owner gets x1.5 and the price is 40,000 coins (`EXP_SCARECROW.md`).
+  - Doc only. Nothing changed in Studio. Not published.
+
+## 2026-11-19 — EXP scarecrow (coin tier) built in Studio
+  - New booster tier `LuckConfig.BoosterTiers.xp` ("หุ่น EXP" / "EXP Scarecrow"): radius 15, 5 min, one placed at a time, Luck 0. Standing in its ring when you earn XP gives the owner x1.5 and other players x1.25. If you stand in several rings, only the highest value counts. Model: `BoosterTemplates.XpScarecrowTemplate` (the red-shirt scarecrow holding the x1.5 sign).
+  - Seed shop sells it for 40,000 coins and buys it back for 20,000 (sell tab; not counted by "sell all"). Bag and coins save right after each buy or sell. (`ShopSystem`, `ShopGui`: seed-style sell rows can now take Name/Icon/PreviewModel from the server.)
+  - XP: `LevelSystem.AddXP(player, amount, { boost = true })` multiplies by `LevelSystem.GetXpMult` (`LuckConfig.GetXpMultAt` at the player's position) and returns the XP actually given. The cheat cap counts XP before the bonus. Boosted XP sources are crop harvest (`PlantingSystem`), fishing and otter catches (`FishingSystem`; the catch popup shows the boosted XP), and egg sales and dirt sweeping (`ChickenService`). Lessons, orchard planting and one-off chicken XP are not boosted.
+  - Kept it from acting as a luck scarecrow: `LuckConfig.GetBoosterLuckAt` and `FarmSlotRegistry` skip EXP scarecrows (no luck, no 3★ planting floor, pet Planter ignores them). `ItemFactory`, `BoosterPlacementSystem` and `ScarecrowPlacer` know the new tier, so the bag reloads it as an EXP scarecrow. The Scarecrow Ghost pet places it 3 studs left of the ordered spot. `Localization` adds `Item_BoosterXp`. Placed scarecrows now get attribute `ExpiresAt`.
+  - New `StarterPlayerScripts.XpBuffGui`: while you stand in an EXP ring, a top-left pill like the rain one shows "📈 หุ่น EXP (ของคุณ) · EXP x1.5 · m:ss". It moves down to a free row when the rain, trash event or krathong pills are showing.
+  - Tested: all 13 scripts compile, and the ring math/filters were checked with copies of the modules (luck 0 from an EXP ring, 20 with a straw scarecrow; owner 1.5, others 1.25, out of range 1, no stacking; 3★ floor only from luck scarecrows). NOT tested in Play: buying or selling in the shop, placing it, the buff pill on screen, bag save and reload, real XP gain. The bag card still shows the 🍀 strip icon.
+  - Backups: `backups/{LuckConfig,FarmSlotRegistry,ItemFactory,BoosterPlacementSystem,Localization,ShopSystem,ShopGui,LevelSystem,PlantingSystem,FishingSystem,ChickenService,ScarecrowPlacer}_before_xpScarecrow_20261119.lua` (byte hash matches Studio). `XpBuffGui` is new (delete it to undo).
+  - Studio only, not published.
+
+- 2026-11-19 ลดความสว่างแมวเก้าชีวิต (NineLivesCat) อีก 10% (ผู้ใช้สั่ง) เฉพาะตัวนี้ ตำนานตัวอื่น (เสือ/นาก) ไม่เปลี่ยน
+  - `ServerScriptService.PetSystem.PetDefinitions` NineLivesCat: เพิ่ม `AuraDim = 0.9`
+  - `ServerScriptService.PetSystem.PetController`: `Spawn` ตั้ง Attribute `AuraDim` บนตัวสัตว์จาก def · `applyRarityGlow` คูณ `dim` ด้วย Attribute นี้ → PointLight 3 ดวง (AuraLight 2.4→2.16, ForeheadLight 1.8→1.62, TailTipLight 1.44→1.30 หลังคูณระดับตำนาน), ParticleEmitter 4 ตัว Brightness 1→0.9, ขอบเรืองแสงทอง OutlineTransparency 0.30→0.37
+  - `StarterPlayer.StarterPlayerScripts.PetFireflyRing`: อ่าน `AuraDim` → ดวงไฟวิญญาณม่วง 9 ดวง: ไฟ Brightness ×0.9, ความทึบของดวง ×0.9, ประกาย Brightness 0.9 (จิ้งจอก/ไก่กลายพันธุ์ไม่มี Attribute = เท่าเดิม)
+  - ไม่ได้แก้: ชิ้น Neon ในโมเดล (ตา/ลายหน้าผาก) และตัวโชว์บนตู้สุ่ม
+  - เช็ก: คอมไพล์ผ่านทั้ง 3 สคริปต์ · require PetDefinitions ได้ cat AuraDim 0.9, WhiteTiger/Otter ไม่มี · ค่าแสงข้างบนคำนวณจากโค้ด **ยังไม่ได้ทดสอบใน Play / ยังไม่ได้ดูภาพจริง**
+  - สำรอง: `backups/PetFireflyRing_before_catDim10_20261119.lua` (ซอร์สเต็ม ขนาดตรงกับ Studio) · `backups/PetController_PetDefinitions_sections_before_catDim10_20261119.lua` (เฉพาะส่วนที่แก้ สคริปต์ใหญ่ 49 KB / 35 KB)
+  - Studio เท่านั้น ยังไม่ได้ Publish · แมวที่เรียกออกมาอยู่แล้วจะเปลี่ยนหลังเรียกใหม่
+
+## 2026-11-19 — EXP scarecrow is dev-only for now
+  - The user asked to enable it only for dev first. `ReplicatedStorage.LuckConfig` has a new switch `XP_BOOSTER_DEV_ONLY = true`. Outside Studio the `xp` tier is removed, so live servers have no EXP scarecrow: the shop does not sell it or buy it back, the ghost pet does not place it, the buff pill does not show and XP stays normal. In Studio it works as before.
+  - `ServerScriptService.ShopSystem`: the buy row, buy and sell-back are skipped when the tier is off.
+  - `ServerScriptService.BoosterPlacementSystem`: `getToolTierId` returns nil for a tier that is set but not in LuckConfig (it used to fall back to x50). Placing such a tool shows "หุ่นนี้ยังใช้ไม่ได้ในตอนนี้". So EXP scarecrows already in the test account's bag (Studio uses the real DataStore) stay in the bag on live but cannot be placed or turned into luck scarecrows.
+  - Tested: the 3 scripts compile. A LuckConfig copy acting as a live server has tiers x50 and x100 only and EXP multiplier 1; in Studio it has x50, x100 and xp and multiplier 1.5. Not tested on a real live server (needs a publish).
+  - To open it for players: set `XP_BOOSTER_DEV_ONLY = false`, then publish.
+  - Backups: `backups/{LuckConfig,ShopSystem,BoosterPlacementSystem}_before_xpDevOnly_20261119.lua` (byte hash matches Studio).
+  - Studio only, not published.
+
+- 2026-11-19 แก้รูปตรา "ชีวิตนี้เพื่อฟาร์ม" (เล่นครบ 1,000 ชั่วโมง) ไม่ขึ้นในหน้าต่างเหรียญตรา
+  - สาเหตุ: `image` ใน config เป็น 118488295868225 = รูปตราเริ่มต้นของ Roblox ("รูปย่อป้ายเริ่มต้น" ผู้สร้าง Roblox) ไม่ใช่รูปที่อัปโหลด รูปบน Dashboard ถูกต้องอยู่แล้ว
+  - `ReplicatedStorage.AchievementConfig` time ขั้น 1000: `image` → 135567098224767 (IconImageId จริงจาก `BadgeService:GetBadgeInfoAsync(701538863160940)`, ผู้สร้าง One_moretime91) · อัปเดตตารางใน `ACHIEVEMENTS.md`
+  - เช็ก: ตราอื่น 35 อันใช้รูปของผู้ใช้ครบ · คอมไพล์ config ผ่าน **ยังไม่ได้เปิดหน้าต่างตราใน Play**
+  - สำรอง: `backups/AchievementConfig_before_time1000Icon_20261119.lua` (ซอร์สเต็ม ขนาดตรงกับ Studio)
+  - Studio เท่านั้น ยังไม่ได้ Publish
+
+- 2026-11-19 รูปตรา "เทพแห่งการเพาะปลูก" (ปลูก 1,000,000 ต้น) ในหน้าต่างเหรียญตราให้ตรงกับรูปปัจจุบันบน Dashboard (ผู้ใช้สั่ง)
+  - `ReplicatedStorage.AchievementConfig` plant ขั้น 1000000: `image` 83103360296792 (รูปเก่า) → 86061144001275 (IconImageId จาก BadgeService) · อัปเดตตารางใน `ACHIEVEMENTS.md`
+  - เช็ก: คอมไพล์ผ่าน · ตรวจทั้ง 36 ตรากับ BadgeService แล้วตรงกันครบ (รวมขั้น 1,000 ชั่วโมงที่แก้ก่อนหน้า) **ยังไม่ได้เปิดหน้าต่างตราใน Play**
+  - สำรอง: `backups/AchievementConfig_before_plant1MIcon_20261119.lua` (ซอร์สเต็ม ขนาดตรงกับ Studio)
+  - Studio เท่านั้น ยังไม่ได้ Publish

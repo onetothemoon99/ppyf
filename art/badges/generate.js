@@ -118,6 +118,57 @@ function crown(x, y, s = 1) {
 	</g>`;
 }
 
+// หยดน้ำ ปลายแหลมด้านบน
+function drop(x, y, r) {
+	return `<path d="M${x},${y - r * 1.7} Q${x + r * 1.1},${y - r * 0.2} ${x},${y + r} Q${x - r * 1.1},${y - r * 0.2} ${x},${y - r * 1.7}Z" fill="#6fd0ff" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/>`;
+}
+
+// บัวรดน้ำ ปากพวยอยู่ขวาบน
+function wateringCan(fill) {
+	return `<path d="M318,266 L380,190" stroke="${INK}" stroke-width="32" stroke-linecap="round"/>
+		<path d="M318,266 L380,190" stroke="${fill}" stroke-width="16" stroke-linecap="round"/>
+		<ellipse cx="390" cy="178" rx="30" ry="15" transform="rotate(-50 390 178)" fill="${fill}" stroke="${INK}" stroke-width="9"/>
+		<path d="M198,214 C138,214 132,306 194,308" fill="none" stroke="${INK}" stroke-width="30" stroke-linecap="round"/>
+		<path d="M198,214 C138,214 132,306 194,308" fill="none" stroke="${fill}" stroke-width="14" stroke-linecap="round"/>
+		<path d="M186,206 H330 L316,338 Q256,356 200,338Z" fill="${fill}" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>
+		<rect x="176" y="190" width="164" height="26" rx="12" fill="${fill}" stroke="${INK}" stroke-width="9"/>
+		<path d="M206,236 C210,280 214,306 222,324" fill="none" stroke="#ffffff88" stroke-width="11" stroke-linecap="round"/>`;
+}
+
+// มะม่วงสุก เอียงได้
+function mango(x, y, s = 1, deg = 0) {
+	return `<g transform="translate(${x} ${y}) rotate(${deg}) scale(${s})">
+		<path d="M0,-38 C30,-40 40,-6 32,18 C24,42 -6,48 -24,34 C-40,20 -36,-36 0,-38Z" fill="url(#mango)" stroke="${INK}" stroke-width="8" stroke-linejoin="round"/>
+		<ellipse cx="-10" cy="-14" rx="7" ry="13" fill="#ffffffaa" transform="rotate(20 -10 -14)"/>
+		<path d="M0,-38 C8,-54 26,-58 36,-52 C28,-40 12,-36 0,-38Z" fill="#6fd05a" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/>
+	</g>`;
+}
+
+// ตะกร้อสอยมะม่วง ไม้ไผ่เฉียงจากซ้ายล่างไปขวาบน ตะกร้าที่ปลาย
+function picker(fill = "#e0b85a", fruits = 1) {
+	let inBasket = "";
+	if (fruits >= 1) inBasket += mango(356, 100, 0.62, 10);
+	if (fruits >= 2) inBasket += mango(322, 108, 0.55, -20);
+	return `<path d="M136,410 L332,150" stroke="${INK}" stroke-width="28" stroke-linecap="round"/>
+		<path d="M136,410 L332,150" stroke="${fill}" stroke-width="13" stroke-linecap="round"/>
+		<path d="M192,336 l12,9 M236,278 l12,9 M280,220 l12,9" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>
+		<path d="M136,410 L168,368" stroke="#d93b3b" stroke-width="16" stroke-linecap="round"/>
+		<path d="M296,128 Q336,206 400,140" fill="#c98a3a" stroke="${INK}" stroke-width="9" stroke-linejoin="round"/>
+		<path d="M314,150 L352,180 M340,138 L366,176 M366,132 L382,160" stroke="#8a5a35" stroke-width="5" stroke-linecap="round"/>
+		${inBasket}
+		<ellipse cx="348" cy="134" rx="54" ry="15" transform="rotate(-14 348 134)" fill="none" stroke="${INK}" stroke-width="9"/>`;
+}
+
+// หน้ากากโจรสีดำ
+function thiefMask(x, y, s = 1) {
+	return `<g transform="translate(${x} ${y}) scale(${s})">
+		<path d="M-70,-6 C-40,-30 40,-30 70,-6 C66,18 30,26 0,14 C-30,26 -66,18 -70,-6Z" fill="#2b2b3a" stroke="${INK}" stroke-width="8" stroke-linejoin="round"/>
+		<ellipse cx="-30" cy="-2" rx="16" ry="11" fill="#fff" stroke="${INK}" stroke-width="5"/><circle cx="-27" cy="-1" r="6" fill="${INK}"/>
+		<ellipse cx="30" cy="-2" rx="16" ry="11" fill="#fff" stroke="${INK}" stroke-width="5"/><circle cx="33" cy="-1" r="6" fill="${INK}"/>
+		<path d="M66,-8 C86,-14 96,-4 100,8 M66,-2 C82,4 88,14 86,26" fill="none" stroke="#2b2b3a" stroke-width="9" stroke-linecap="round"/>
+	</g>`;
+}
+
 // ลูกศรชี้ขึ้น ปลายอยู่ที่ x,y
 function upArrow(x, y, w, h, fill) {
 	const hw = w / 2;
@@ -374,6 +425,14 @@ const ICONS = {
 		<path d="M210,140 C214,170 230,190 240,200" fill="none" stroke="#ffffffcc" stroke-width="7" stroke-linecap="round"/>
 		<rect x="144" y="96" width="224" height="32" rx="14" fill="url(#gold)" stroke="${INK}" stroke-width="10"/>
 		<rect x="144" y="344" width="224" height="32" rx="14" fill="url(#gold)" stroke="${INK}" stroke-width="10"/>`,
+	// ช่วยรดน้ำเพื่อน: บัวฟ้า → บัวเขียวมีหัวใจ → บัวทองสวมมงกุฎ
+	help1: () => `${wateringCan("#6fb7e8")}${drop(410, 236, 12)}${drop(436, 206, 10)}${drop(420, 276, 9)}`,
+	help2: () => `${wateringCan("#6fd05a")}${heart(258, 276, 34, "#ff5f8f")}${drop(410, 236, 12)}${drop(436, 206, 10)}${drop(420, 276, 9)}`,
+	help3: () => `${wateringCan("url(#gold)")}${heart(258, 276, 36, "#ff5f8f")}${crown(258, 150, 0.7)}${drop(410, 236, 12)}${drop(436, 206, 10)}${drop(420, 276, 9)}`,
+	// ขโมยสำเร็จ: ตะกร้อ 1 ผล → 2 ผล + หน้ากาก → ตะกร้อทอง กองมะม่วง หน้ากาก มงกุฎ
+	steal1: () => `${picker("#e0b85a", 1)}${mango(170, 230, 0.9, -14)}`,
+	steal2: () => `${picker("#e0b85a", 2)}${thiefMask(150, 206, 0.85)}`,
+	steal3: () => `${picker("url(#gold)", 2)}${mango(150, 318, 0.75, -20)}${mango(214, 330, 0.8, 12)}${mango(184, 278, 0.75, -4)}${thiefMask(148, 186, 0.8)}${crown(148, 124, 0.55)}`,
 	fish1: () => `${fish(262, 228, 0.82, -6, { body: "#ff9f43", belly: "#ffe0b0", fin: "#ff6f3c" })}`,
 	fish2: () => `${fish(248, 240, 0.92, -8, { body: "#4db8ff", belly: "#d5f2ff", fin: "#2384e8" })}`,
 };
@@ -406,6 +465,12 @@ const EXTRAS = {
 	egg5: () => `${sparkle(126, 160, 24)}${sparkle(392, 150, 20)}${sparkle(404, 240, 13)}${sparkle(110, 240, 12)}`,
 	level5: () => `${sparkle(106, 110, 18)}${sparkle(410, 104, 16)}`,
 	time4: () => `${heart(140, 140, 16, "#ff9db4")}${heart(380, 136, 14, "#ff9db4")}${sparkle(410, 270, 13, "#fffbe0")}`,
+	help1: () => `${sparkle(116, 140, 18)}${sparkle(120, 330, 12)}`,
+	help2: () => `${sparkle(116, 140, 20)}${heart(118, 320, 14, "#ff9db4")}${sparkle(404, 330, 13)}`,
+	help3: () => `${sparkle(110, 150, 22)}${heart(116, 320, 15, "#ff9db4")}${sparkle(404, 330, 15)}${sparkle(400, 110, 14)}`,
+	steal1: () => `${sparkle(410, 270, 14)}`,
+	steal2: () => `${sparkle(410, 270, 16)}${sparkle(118, 120, 12)}`,
+	steal3: () => `${sparkle(410, 270, 18)}${sparkle(420, 340, 12)}${sparkle(112, 200, 14)}`,
 	plant7: () => `${sparkle(110, 150, 22)}${sparkle(406, 130, 18)}${sparkle(412, 300, 14)}${sparkle(100, 290, 13)}`,
 	fish6: () => `${bubble(112, 170, 15)}${bubble(130, 120, 10)}${sparkle(410, 320, 15)}${sparkle(104, 300, 12)}`,
 	egg6: () => `${sparkle(120, 110, 18)}${sparkle(396, 104, 16)}`,
@@ -421,6 +486,24 @@ function artImage(b) {
 }
 
 function background(cat) {
+	if (cat === "help") {
+		return `<circle cx="256" cy="256" r="206" fill="url(#orchard)"/>
+			<g clip-path="url(#disc)">
+				<circle cx="120" cy="300" r="70" fill="#4fae4a" opacity=".55"/><circle cx="400" cy="290" r="80" fill="#4fae4a" opacity=".55"/>
+				<path d="M40,350 Q256,310 480,350 V480 H40Z" fill="#7fce55"/>
+				<circle cx="160" cy="110" r="10" fill="#ffffffaa"/><circle cx="352" cy="96" r="7" fill="#ffffffaa"/>
+			</g>`;
+	}
+	if (cat === "steal") {
+		let stars = "";
+		for (const [x, y, r] of [[120, 130, 5], [180, 90, 3], [300, 80, 4], [420, 200, 4], [100, 240, 3], [250, 120, 3]]) stars += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff7c0"/>`;
+		return `<circle cx="256" cy="256" r="206" fill="url(#night)"/>
+			<g clip-path="url(#disc)">${stars}
+				<path d="M412,96 A44,44 0 1,0 440,170 A34,34 0 1,1 412,96Z" fill="#fff3a0" opacity=".9"/>
+				<circle cx="110" cy="330" r="80" fill="#24406a"/><circle cx="420" cy="340" r="90" fill="#24406a"/>
+				<path d="M40,370 Q256,330 480,370 V480 H40Z" fill="#2f5a3a"/>
+			</g>`;
+	}
 	if (cat === "level") {
 		let dots = "";
 		for (const [x, y, r] of [[110, 130, 6], [168, 92, 4], [352, 92, 5], [410, 150, 4], [96, 250, 4], [420, 262, 6], [150, 318, 4], [372, 330, 4]]) {
@@ -519,6 +602,9 @@ function badgeSvg(b) {
 		<linearGradient id="mint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fc8b8"/><stop offset="1" stop-color="#a6f0d8"/></linearGradient>
 		<linearGradient id="up" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6f56a"/><stop offset="1" stop-color="#3fbf5a"/></linearGradient>
 		<linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9ec6c"/><stop offset="1" stop-color="#55bf4a"/></linearGradient>
+		<linearGradient id="orchard" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8f7b0"/><stop offset="1" stop-color="#7fd06a"/></linearGradient>
+		<linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f2660"/><stop offset="1" stop-color="#4a5bb0"/></linearGradient>
+		<linearGradient id="mango" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff07a"/><stop offset=".6" stop-color="#ffc62e"/><stop offset="1" stop-color="#f08a1c"/></linearGradient>
 		<linearGradient id="rainbow" x1="0" y1="0" x2="0" y2="1">${RAINBOW}</linearGradient>
 		<clipPath id="disc"><circle cx="256" cy="256" r="206"/></clipPath>
 		<clipPath id="globe"><circle cx="256" cy="240" r="105"/></clipPath>
@@ -575,6 +661,13 @@ const BADGES = [
 	{ file: "egg_6_1M", cat: "egg", tier: 6, label: "1,000,000", icon: "egg6" },
 	{ file: "level_6_2000", cat: "level", tier: 6, label: "Lv.2000", icon: "level6" },
 	{ file: "time_5_1000h", cat: "time", tier: 5, label: "1,000 ชั่วโมง", icon: "time5", thai: true },
+	{ file: "egg_6_200K", cat: "egg", tier: 6, label: "200,000", icon: "egg6" }, // 2026-11-18 เกณฑ์ใหม่แทน egg_6_1M
+	{ file: "help_1_50", cat: "help", tier: 1, label: "50 ครั้ง", icon: "help1", thai: true },
+	{ file: "help_2_200", cat: "help", tier: 2, label: "200 ครั้ง", icon: "help2", thai: true },
+	{ file: "help_3_500", cat: "help", tier: 3, label: "500 ครั้ง", icon: "help3", thai: true },
+	{ file: "steal_1_50", cat: "steal", tier: 1, label: "50 ครั้ง", icon: "steal1", thai: true },
+	{ file: "steal_2_200", cat: "steal", tier: 2, label: "200 ครั้ง", icon: "steal2", thai: true },
+	{ file: "steal_3_500", cat: "steal", tier: 3, label: "500 ครั้ง", icon: "steal3", thai: true },
 	{ file: "welcome", cat: "plant", tier: "welcome", label: "ยินดีต้อนรับ", icon: "welcome", thai: true, art: "welcome_art.webp", artX: 36, artY: 34, artSize: 440 },
 ];
 
@@ -587,13 +680,16 @@ function shot(htmlPath, pngPath, w, h) {
 
 for (const dir of ["svg", "png"]) fs.mkdirSync(path.join(OUT, dir), { recursive: true });
 const tmp = path.join(OUT, "_render.html");
-for (const b of BADGES) {
+// ONLY=<file> = วาดแค่ตรานั้น ไม่ทำ preview (2026-11-18)
+const ONLY = process.env.ONLY;
+for (const b of ONLY ? BADGES.filter((x) => x.file === ONLY) : BADGES) {
 	const svg = badgeSvg(b);
 	fs.writeFileSync(path.join(OUT, "svg", b.file + ".svg"), svg);
 	fs.writeFileSync(tmp, `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;overflow:hidden">${svg}</body></html>`);
 	shot(tmp, path.join(OUT, "png", b.file + ".png"), 512, 512);
 }
 
+if (ONLY) { fs.unlinkSync(tmp); console.log("done", ONLY); process.exit(0); }
 // แผ่นตัวอย่าง: แถวบน = ตัดวงกลมแบบ Roblox, แถวล่าง = ขนาดเล็กบนหน้าเกม
 const big = BADGES.map((b) => `<img src="png/${b.file}.png" style="width:300px;height:300px;border-radius:50%">`).join("");
 const small = BADGES.map((b) => `<img src="png/${b.file}.png" style="width:100px;height:100px;border-radius:50%">`).join("");
