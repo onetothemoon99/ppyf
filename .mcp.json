@@ -4,6 +4,10 @@
       "type": "stdio",
       "command": "uvx",
       "args": [
+        "--python",
+        "3.12",
+        "--with",
+        "pydantic==2.11.7",
         "blender-mcp"
       ]
     },
