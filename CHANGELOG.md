@@ -5245,3 +5245,11 @@
   - New `ReplicatedStorage.MountPreviewModels.LongLegFlamingo` (a copy of the template).
   - Checked by eye in an Edit screenshot (temporary copy on the plaza; saved as `art/flamingo_mount/studio_template_check.jpg`): it matches the Blender look. The purple lantern shows, the head faces forward and it stands on the ground. The copy and `ServerStorage._FlamingoImport` were deleted afterwards. The Edit camera was moved for the screenshot.
   - Not done yet: no MountConfig entry, so it can't be ridden or rolled. Also still to do: the Wade perk, wing flap, one-leg idle, ripples, and accessory positions. Not tested in Play. The place was not saved by me, nothing published.
+
+- 2026-11-22 — The "?" How-to-play button is hidden once every lesson is done.
+  - `StarterPlayer.StarterPlayerScripts.HowToPlayGui`: new `allLessonsDone()`. It is true when `LessonsLoaded` is set and every lesson where `LessonContent.IsAvailable` is true has `Lesson_<id>` = CLAIMED (2). Today that means basic, fish and orchard; pet and chicken are switched off.
+  - New `refreshButtonShown()` sets `HowToPlayButtonGui.Enabled` and closes the panel if it is open. It runs at start and whenever a lesson attribute changes.
+  - The button comes back by itself when a new lesson is added or a switched-off lesson is turned back on. It also shows while the lesson data is still loading. Other menus can still open the panel through `OpenHowToPlay`.
+  - Check: compiles. Play test changed attributes on the client only (nothing saved): the owner's real state is all 2 → hidden. Setting fish to 1 → shown, setting it back to 2 → hidden. The original values were put back.
+  - Backup: `backups/HowToPlayGui_before_hidewhendone_20261122.lua`.
+  - Studio only, not published.
