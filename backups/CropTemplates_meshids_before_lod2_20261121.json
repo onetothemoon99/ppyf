@@ -1,0 +1,30 @@
+{
+ "note": "2026-11-21 backup before the low-poly swap round 2 (strawberry, onion, pineapple). Only MeshPart geometry changed (MeshPart:ApplyMesh); Size, CFrame, colour and attributes were kept. Restore: in Studio Edit, for each row: local src = AssetService:CreateMeshPartAsync(Content.fromUri(oldMeshId)); part:ApplyMesh(src); part.Size = size. Low-poly source: asset 114808329812593, art/crop_lod/build_crop_lod.py + meshdump2.txt.",
+ "parts": [
+  {"path":"ServerStorage.CropTemplates.Strawberry.Stage1.strawberry_seedling.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://133664832627800","size":[2.117979,0.288180,2.540355]},
+  {"path":"ServerStorage.CropTemplates.Strawberry.Stage3.strawberry_flowering.stem_green_Node.stem_green","oldMeshId":"rbxassetid://128827862620080","size":[1.909638,1.561991,2.569875]},
+  {"path":"ServerStorage.CropTemplates.Strawberry.Stage3.strawberry_flowering.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://133927664637199","size":[3.381066,0.669848,3.591000]},
+  {"path":"ServerStorage.CropTemplates.Strawberry.Stage5.strawberry_ripe.stem_green_Node.stem_green","oldMeshId":"rbxassetid://87705784322185","size":[4.529088,1.891940,4.548887]},
+  {"path":"ServerStorage.CropTemplates.Strawberry.Stage5.strawberry_ripe.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://74898394424701","size":[5.187745,0.921568,5.437047]},
+  {"path":"ServerStorage.CropTemplates.Strawberry.Stage5.strawberry_ripe.berry_ripe_Node.berry_ripe","oldMeshId":"rbxassetid://72102459408991","size":[5.232171,1.270534,5.190446]},
+  {"path":"ServerStorage.CropTemplates.Strawberry.Stage5.strawberry_ripe.achene_gold_Node.achene_gold","oldMeshId":"rbxassetid://92231154794599","size":[5.356328,1.173422,5.289420]},
+  {"path":"ServerStorage.CropTemplates.Onion.Stage3.green_onion_clumping.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://74791379828793","size":[1.271666,1.513286,1.289590]},
+  {"path":"ServerStorage.CropTemplates.Onion.Stage3.green_onion_clumping.leaf_deep_Node.leaf_deep","oldMeshId":"rbxassetid://110684283624619","size":[1.491420,1.497999,1.429569]},
+  {"path":"ServerStorage.CropTemplates.Onion.Stage3.green_onion_clumping.root_cream_Node.root_cream","oldMeshId":"rbxassetid://124841077256629","size":[0.402396,0.504980,0.415844]},
+  {"path":"ServerStorage.CropTemplates.Onion.Stage5.green_onion_harvest.bulb_white_Node.bulb_white","oldMeshId":"rbxassetid://83655337047590","size":[0.614023,0.700000,0.616336]},
+  {"path":"ServerStorage.CropTemplates.Onion.Stage5.green_onion_harvest.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://72204490431266","size":[2.663860,2.308281,2.328915]},
+  {"path":"ServerStorage.CropTemplates.Onion.Stage5.green_onion_harvest.leaf_deep_Node.leaf_deep","oldMeshId":"rbxassetid://108576815629928","size":[2.497028,2.278584,2.619292]},
+  {"path":"ServerStorage.CropTemplates.Onion.Stage5.green_onion_harvest.flower_white_Node.flower_white","oldMeshId":"rbxassetid://140682499303155","size":[0.464869,0.469154,0.466599]},
+  {"path":"ServerStorage.CropTemplates.Onion.Stage5.green_onion_harvest.root_cream_Node.root_cream","oldMeshId":"rbxassetid://72355133409811","size":[0.685158,0.705475,0.686144]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage3.pineapple_flowering.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://120130716260697","size":[5.417231,3.141270,4.872839]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage3.pineapple_flowering.leaf_dark_Node.leaf_dark","oldMeshId":"rbxassetid://89012927450948","size":[5.094727,3.079784,4.733911]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage3.pineapple_flowering.leaf_glaucous_Node.leaf_glaucous","oldMeshId":"rbxassetid://110427919255149","size":[4.616696,3.011347,5.277658]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage3.pineapple_flowering.fruit_green_Node.fruit_green","oldMeshId":"rbxassetid://98568668187866","size":[0.356314,0.360000,0.356314]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage3.pineapple_flowering.eye_green_Node.eye_green","oldMeshId":"rbxassetid://82525732996887","size":[0.371602,0.424800,0.371590]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage5.pineapple_ripe.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://130564784668410","size":[6.973559,3.882430,5.951181]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage5.pineapple_ripe.leaf_dark_Node.leaf_dark","oldMeshId":"rbxassetid://122900803579537","size":[6.181562,3.864507,5.683398]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage5.pineapple_ripe.leaf_glaucous_Node.leaf_glaucous","oldMeshId":"rbxassetid://122502236987129","size":[5.678406,3.875642,6.364711]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage5.pineapple_ripe.fruit_gold_Node.fruit_gold","oldMeshId":"rbxassetid://98071951086368","size":[0.653242,0.900000,0.653242]},
+  {"path":"ServerStorage.CropTemplates.Pineapple.Stage5.pineapple_ripe.eye_brown_Node.eye_brown","oldMeshId":"rbxassetid://112104317262397","size":[0.681271,0.990000,0.681248]}
+ ]
+}
