@@ -1,0 +1,26 @@
+{
+ "note": "2026-11-21 backup before the low-poly crop swap (C1). Only MeshPart geometry changed (MeshPart:ApplyMesh); Size, CFrame, colour and attributes were kept. Restore: in Studio Edit, for each row do local src = AssetService:CreateMeshPartAsync(Content.fromUri(oldMeshId)); part:ApplyMesh(src); part.Size = size. Low-poly source: asset 128406212919604, art/crop_lod/build_crop_lod.py.",
+ "parts": [
+  {"path":"ServerStorage.CropTemplates.Corn.Stage3.corn_tasseling.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://101817728666664","size":[5.354468,6.915670,5.024420]},
+  {"path":"ServerStorage.CropTemplates.Corn.Stage3.corn_tasseling.tassel_tan_Node.tassel_tan","oldMeshId":"rbxassetid://89261722980599","size":[1.239818,1.085715,1.226467]},
+  {"path":"ServerStorage.CropTemplates.Corn.Stage3.corn_tasseling.husk_green_Node.husk_green","oldMeshId":"rbxassetid://135514649827438","size":[0.709181,0.708195,0.718944]},
+  {"path":"ServerStorage.CropTemplates.Corn.Stage5.corn_mature.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://105896819922293","size":[5.360791,5.617698,5.095816]},
+  {"path":"ServerStorage.CropTemplates.Corn.Stage5.corn_mature.husk_dry_Node.husk_dry","oldMeshId":"rbxassetid://134834368492458","size":[2.122273,6.819337,1.767610]},
+  {"path":"ServerStorage.CropTemplates.Corn.Stage5.corn_mature.kernel_gold_Node.kernel_gold","oldMeshId":"rbxassetid://113417745077595","size":[1.698118,2.290321,0.950903]},
+  {"path":"ServerStorage.CropTemplates.Corn.Stage5.corn_mature.silk_dry_Node.silk_dry","oldMeshId":"rbxassetid://102866627153111","size":[2.068488,1.624909,1.024719]},
+  {"path":"ServerStorage.CropTemplates.Wheat.Stage3.wheat_jointing.culm_green_Node.culm_green","oldMeshId":"rbxassetid://113371160279782","size":[0.562751,3.601131,0.334209]},
+  {"path":"ServerStorage.CropTemplates.Wheat.Stage3.wheat_jointing.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://84881419372721","size":[1.270925,2.901412,1.180397]},
+  {"path":"ServerStorage.CropTemplates.Wheat.Stage5.wheat_mature.culm_straw_Node.culm_straw","oldMeshId":"rbxassetid://126079524664250","size":[0.562781,4.900833,0.334211]},
+  {"path":"ServerStorage.CropTemplates.Wheat.Stage5.wheat_mature.leaf_dry_Node.leaf_dry","oldMeshId":"rbxassetid://80617767287054","size":[1.589797,3.934702,1.464572]},
+  {"path":"ServerStorage.CropTemplates.Wheat.Stage5.wheat_mature.spike_gold_Node.spike_gold","oldMeshId":"rbxassetid://97794195660258","size":[0.921402,1.319664,0.675679]},
+  {"path":"ServerStorage.CropTemplates.Wheat.Stage5.wheat_mature.grain_amber_Node.grain_amber","oldMeshId":"rbxassetid://93989342911620","size":[0.930344,1.279766,0.684621]},
+  {"path":"ServerStorage.CropTemplates.Wheat.Stage5.wheat_mature.awn_straw_Node.awn_straw","oldMeshId":"rbxassetid://95900693344665","size":[1.852001,1.997945,1.606277]},
+  {"path":"ServerStorage.CropTemplates.Watermelon.Stage1.watermelon_seedling.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://133906060303863","size":[1.311630,0.327034,1.492526]},
+  {"path":"ServerStorage.CropTemplates.Watermelon.Stage3.watermelon_flowering.vine_green_Node.vine_green","oldMeshId":"rbxassetid://82631398136949","size":[10.066055,1.505817,9.419863]},
+  {"path":"ServerStorage.CropTemplates.Watermelon.Stage3.watermelon_flowering.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://137745143995980","size":[9.566010,0.863124,8.374342]},
+  {"path":"ServerStorage.CropTemplates.Watermelon.Stage5.watermelon_harvest.vine_green_Node.vine_green","oldMeshId":"rbxassetid://88477616605183","size":[12.425117,1.562500,11.616811]},
+  {"path":"ServerStorage.CropTemplates.Watermelon.Stage5.watermelon_harvest.leaf_green_Node.leaf_green","oldMeshId":"rbxassetid://83847387255005","size":[11.480139,0.896641,10.444836]},
+  {"path":"ServerStorage.CropTemplates.Watermelon.Stage5.watermelon_harvest.rind_light_Node.rind_light","oldMeshId":"rbxassetid://85652309746455","size":[11.841423,1.892239,7.813426]},
+  {"path":"ServerStorage.CropTemplates.Watermelon.Stage5.watermelon_harvest.rind_stripe_Node.rind_stripe","oldMeshId":"rbxassetid://140076653905411","size":[11.864666,1.913226,7.843061]}
+ ]
+}
