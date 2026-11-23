@@ -5291,3 +5291,26 @@
   - Check: compiles. Play test changed attributes on the client only (nothing saved): the owner's real state is all 2 → hidden. Setting fish to 1 → shown, setting it back to 2 → hidden. The original values were put back.
   - Backup: `backups/HowToPlayGui_before_hidewhendone_20261122.lua`.
   - Studio only, not published.
+
+- 2026-11-23 — Gift delivery waits 7 s after the inbox write (user sent the warning `DataStore request was added to queue ... Key = inbox_11761234575`).
+  - Cause: after a gift purchase is saved to `inbox_<UserId>`, the script called `deliver` at once, and `deliver` runs `UpdateAsync` on the same key. Two writes to one key within 6 s → the second is queued (not lost, the gift still arrived).
+  - Now `task.delay(7, deliver, target)` instead of `task.spawn(...)` at the post-save line in: `ServerScriptService.LuckBoosterGift` (gift + promo code, 2 places), `ServerScriptService.PremiumPetGift`, `ServerScriptService.NineTailFoxGift`, `ServerScriptService.ScarecrowGhostGift`, `ServerScriptService.MountSystem.MountGift`, `ServerScriptService.MountSystem.MountBundleShop`, `ServerScriptService.ChickenFarm.ChickenService` (`deliverGifts`). Delivery on join is unchanged. If the receiver leaves during the 7 s, the gift stays in the inbox for their next join (existing behaviour).
+  - Check: all 7 compile. Not tested in Play (a real gift needs a Robux purchase).
+  - Backups: `backups/<ScriptName>_before_deliverdelay7_20261123.lua` for the 7 scripts above (size + hash checked against Studio).
+  - Studio only, not published.
+
+- 2026-11-23 — Fishing rod restore waits for the bag to finish loading (user asked about the warning "FishingShop: คืนเบ็ด Rainbow ให้ XiNU14126 (ไม่อยู่ในกระเป๋า)").
+  - Cause (read-only check of live data): Rainbow was in every saved `PlayerInventory_v1` version (12 versions, 2026-11-10 → 11-22) and in `FishingShop_v1`. The bag loaded later than the fixed 15 s `RESTORE_DELAY`, so FishingShop gave the rod first and warned. InventorySystem then skipped its own copy, so there was no duplicate.
+  - `ServerScriptService.FishingShop` `onPlayerAdded`: the restore check still waits at least `RESTORE_DELAY` (15 s), then also waits for `InventoryReady` (checked every 1 s, up to 300 s from join). If the bag is still not ready after 300 s, the rods are given back as before, and the warning says "(กระเป๋ายังโหลดไม่เสร็จใน 300 วิ)" instead of "(ไม่อยู่ในกระเป๋า)".
+  - Not changed: the free Bamboo starter rod (`giveStarterRod`) still uses its own fixed delay. GiveRod / InventorySystem both skip rods already held, so it cannot duplicate.
+  - Check: compiles. Not tested in Play.
+  - Backup: `backups/FishingShop_before_waitInventoryReady_20261123.lua` (size + hash checked against Studio).
+  - Studio only, not published.
+
+- 2026-11-23 — Write gap for `FishingResume_v1` (user's warning `DataStore request was added to queue ... Key = 11760020532`, seen twice).
+  - Finding (read-only scan of 85 DataStores' version history for that key): only `FishingResume_v1` had two writes close together (6.4 s apart at 2026-11-23 04:59 UTC). The others are ≥ 60 s apart.
+  - Cause in `ServerScriptService.AfkRejoin`: an AFK player rejoining the same server. The leave save (`saveResume` → `SetAsync`) runs, the new session's load waits for it (`DataLoadRetry.BeginLeaveSave`), then deletes the same key right away (`RemoveAsync`, line ~657 on the AFK path, ~676 on the normal path). Two writes to one key in under 6 s → queued.
+  - Fix: new `waitResumeGap(userId)` + `removeResume(userId)` (above `fishingCache`). Every `SetAsync` / `RemoveAsync` on `FishingResume_v1` from this server waits until ≥ 7 s (`RESUME_WRITE_GAP`) after the previous one for that UserId. The time slot is booked before waiting, so two writes at once stay in order. The normal-path delete now runs in `task.spawn`, so it doesn't hold up resume fishing. Writes from a different server are not covered.
+  - Check: compiles. Not tested in Play (resume only runs live or with `DevFishingResumeTest`).
+  - Backup: `backups/AfkRejoin_before_resumeWriteGap_20261123.lua` (size + hash checked against Studio).
+  - Studio only, not published.
