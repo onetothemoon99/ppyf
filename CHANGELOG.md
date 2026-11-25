@@ -5445,3 +5445,10 @@
   - Still not tested: real Robux purchase/gift, craft at the bench, effects in Play.
   - Undo: put `DevOnly = true,` back on those rods/recipe. Backups: `backups/FishingConfig_before_rodsLive_20261126.lua`, `backups/CraftConfig_before_rodsLive_20261126.lua` (hash-checked against Studio).
   - Studio only. The user plans to publish at 01:00; not published as of this entry.
+
+## 2026-11-26 — Login announcement V2.1: new rods + EXP scarecrow
+  - User asked for a short note on the new rods and the new scarecrow; planned first, user approved the text and the Id change. I stopped the user's Play session first (they said to).
+  - `ReplicatedStorage.LoginAnnouncementConfig`: `Updates.Items` V2.1 TH "เบ็ดใหม่ เบ็ดฟีนิกซ์ เบ็ดกบน้อย เบ็ดแมลงปอน้อย (คราฟ) , หุ่น EXP เพิ่มค่าประสบการณ์ x1.5" / EN "New Rods: Phoenix, Little Frog, Little Dragonfly (craft) | EXP Scarecrow – x1.5 EXP". `Id` farm-news-20261116 → farm-news-20261127, so players who skipped it today see it again.
+  - Check: compiles; V2.1 is the first update row. Not seen on screen.
+  - Backup: `backups/LoginAnnouncementConfig_before_v21_20261126.lua` (hash-checked against Studio).
+  - Studio only. The user plans to publish at 01:00; not published as of this entry.
