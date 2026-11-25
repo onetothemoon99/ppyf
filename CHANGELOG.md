@@ -5460,3 +5460,8 @@
   - Not changed: the login announcement V2.1 text still mentions the new rods and the EXP scarecrow.
   - Backups of the opened state: `backups/{LuckConfig,FishingConfig,CraftConfig}_before_reclose_20261126.lua` (hash-checked).
   - Studio only, not published.
+
+## 2026-11-26 — Login announcement V2.1 text removed again
+  - User: "เอาออกด้วย" (the rods and EXP scarecrow are not in this release). `ReplicatedStorage.LoginAnnouncementConfig` is byte-identical to `backups/LoginAnnouncementConfig_before_v21_20261126.lua` again (hash-checked): V2.1 TH/EN empty, `Id = "farm-news-20261116"`. Compiles.
+  - Backup of the V2.1 version: `backups/LoginAnnouncementConfig_before_unV21_20261126.lua` (hash-checked).
+  - Studio only, not published.
