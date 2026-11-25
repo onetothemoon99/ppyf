@@ -5314,3 +5314,118 @@
   - Check: compiles. Not tested in Play (resume only runs live or with `DevFishingResumeTest`).
   - Backup: `backups/AfkRejoin_before_resumeWriteGap_20261123.lua` (size + hash checked against Studio).
   - Studio only, not published.
+
+- 2026-11-23 — Publish check (inspection): the user published at about 17:00 ICT. `ServerHealth_v1` shows the old server (place version 3856) logging until 17:19 ICT and a new server on **version 3862** starting at 17:18 ICT. So the three 2026-11-23 entries above (gift deliver delay, FishingShop wait, AfkRejoin write gap), which were in Studio by then, are most likely live in v3862. This is not confirmed script by script. `GetProductInfo(placeId).Updated` still says 06:56 UTC (13:56 ICT), and Studio reports `game.PlaceVersion` = 3860.
+
+- 2026-11-23 — Gift inboxes: read before writing on join (the user's warning `DataStore request was added to queue ... Key = inbox_8722595014`, player Chipby_2544).
+  - Finding: that key does not exist in any of the 7 gift stores (LuckGift_v1, PremiumPetGift_v1, NineTailFoxGift_v1, ScarecrowGhostGift_v1, MountGift_v1, MountBundleGift_v1, ChickenGift_v1), so no gift was ever sent. On every join, each gift script's `deliver` called `UpdateAsync("inbox_<id>")` even when the inbox was empty. If a player left and rejoined the same server within 6 s, that is two writes to one key → queued. The 7 s delay added earlier only covered the after-purchase path.
+  - Fix: the `deliver` function in each script now starts with a `GetAsync` on the inbox. If the inbox is empty or already fully delivered, it returns without writing. If the read fails, it falls back to the old `UpdateAsync` path. This also cuts about 7 DataStore writes from almost every join.
+    - `ServerScriptService.LuckBoosterGift`, line ~64
+    - `ServerScriptService.PremiumPetGift`, line ~66
+    - `ServerScriptService.NineTailFoxGift`, line ~63
+    - `ServerScriptService.ScarecrowGhostGift`, line ~63
+    - `ServerScriptService.MountSystem.MountGift`, line ~57
+    - `ServerScriptService.MountSystem.MountBundleShop`, line ~112
+    - `ServerScriptService.ChickenFarm.ChickenService` `deliverGifts`, line ~1778 (checks feed > feedDone or hatch > hatchDone)
+  - Not changed: the pet gift scripts still write once per gift level in their loop when more than one gift is waiting.
+  - Check: all 7 compile. Not tested in Play.
+  - Backups: `backups/<ScriptName>_before_inboxReadFirst_20261123.lua` × 7 (size + hash checked against Studio).
+  - Studio only, not published.
+
+- 2026-11-23 — i18n phase 1: server messages to players now follow the player's language (Thai/English). The user asked: "ช่วยตรวจสองเรื่องการรองรับหลายภาษา ... ตรวจสอบและวางแผนทำ" → "เริ่มเฟส 1".
+  - New `ServerScriptService.TextEn` (ModuleScript): a Thai → English table (EXACT + PATTERNS) plus `TextEn.Name` for pet / mount / rod / ticket names, built from PetDefinitions, MountConfig and FishingConfig. `TextEn.For(player, text)` and `TextEn.Result(player, result)` leave Thai players unchanged. Any new Thai message sent through a wired script needs an entry here, or the script can use `L(player, th, en)` directly. To undo: delete it and restore the backups below.
+  - Wired at a single point (the RemoteFunction result and/or `notify`): `SultanService` (redeem codes, gifts, daily gift), `AutoFeeder`, `MountSystem.MountService`, `MountSystem.MountGachaService` (this also covers the messages MountOwnership returns), and `GachaService` (also covers PetOwnership duplicate/shard messages). `PetOwnership` also wires the old dupes-on-join notice.
+  - Edited line by line with `L(player, th, en)`:
+    - `GachaService`: all messages, plus the Robux ticket toast. English ticket names are inline (`TICKET_EN`).
+    - `VipService`: all messages and gift toasts.
+    - `PetSystem.PetManager`: feed, full, lives, revive, slot and locked notices. Pet names use `DisplayNameEn` (`petNameFor`).
+  - Checked and already bilingual, so not changed: ShopSystem, ChickenService, CropContest, Orchard.OrchardService, Orchard.UncleManao (player messages). Their world boards, signs and NPC bubbles are left for phase 4.
+  - Check: all edited scripts compile. TextEn coverage test: every fixed message string in the wired scripts translates. Studio Play with `DevForceLang = "en"`: invalid-request calls to GachaRequest, VipRequest, SultanRequest, AutoFeederRequest, MountRequest and MountGachaRequest all returned English, with no script errors. `DevForceLang` was cleared afterwards. Not tested: real purchases, gifts, code redeems, or a real English-locale account.
+  - Backups: `backups/{GachaService,VipService,SultanService,AutoFeeder,PetOwnership,PetManager,MountGachaService,MountService}_before_i18nServer_20261123.lua` (size + hash checked against Studio).
+  - Studio only, not published.
+
+- 2026-11-23 — i18n phase 2: gift scripts now send Thai/English messages by player language (user: "ทำเฟส 2 ต่อ").
+  - Wired to `ServerScriptService.TextEn` at one point: the gift RemoteFunction result (`TextEn.Result`), and `notify` where it took a single Thai text.
+    - `PetSlotGift` (+notify), `LuckBoosterGift` (+notify), `BoomboxGift` (+notify)
+    - `CommunityReward`, `MountSystem.MountGift`, `MountSystem.MountBundleShop`, `PremiumPetGift`, `NineTailFoxGift`, `ScarecrowGhostGift` (their notify was already Thai/English)
+    - `PlantingSystem`: quota gift remote `PlantQuotaGiftRequest` + its 2 gift toasts. Found during the Play test, it was not on the original list.
+  - `TextEn` additions:
+    - gift and community-reward messages
+    - general patterns ("(Studio) จำลองการซื้อ… ให้ X", "X มี…แล้ว", "X มี…เลเวลเต็มแล้ว (Lv.N)", "…ยังไม่เปิด", "🎁 ส่ง…ให้ X เรียบร้อยแล้ว")
+    - quota-gift patterns
+    - extra item names (Golden Lucky Scarecrow, Pet Slot +1, Broom Pack, promo code…)
+    - `TextEn.Name` now returns the trimmed name when unknown.
+  - Check:
+    - All edited scripts compile.
+    - Every fixed gift message string translates.
+    - Studio Play with `DevForceLang = "en"`: a bogus action and a gift-to-self on all 10 gift RemoteFunctions (Luck, PetSlot, Boombox, Mount, MountBundle, PremiumPet, NineTailFox, ScarecrowGhost, PlantQuota, FishingRod) all returned English. No script errors. `DevForceLang` cleared.
+    - Not tested: real gift purchases or deliveries, or the community-group claim. Seen in the log, not related to this change: a `VipGui` "Maximum event re-entrancy depth exceeded ... updateScale line 305" warning.
+  - Backups: `backups/{PetSlotGift,MountGift,MountBundleShop,PremiumPetGift,ScarecrowGhostGift,LuckBoosterGift,NineTailFoxGift,BoomboxGift,CommunityReward,PlantingSystem}_before_i18nGift_20261123.lua` (size + hash checked against Studio).
+  - Studio only, not published.
+
+- 2026-11-23 — i18n phase 3: player-facing system text and config data (user: "ทำเฟส 3 ต่อ").
+  - Changed:
+    - `ServerScriptService.RestartNotice`: the "restart canceled" toast sent to every player is now Thai/English per player ("✅ The server restart was canceled, keep playing!").
+    - `StarterPlayer.StarterPlayerScripts["BackgroundMusic "]`: the "✨ เสียงเอฟเฟกต์" label is now "✨ Sound Effects" for English players.
+  - Checked and left as is:
+    - Already bilingual: BanService kick text, AutoRestart kick text, RestartNoticeGui, the CheatWatchGui suspension screen, OrchardSkinTab.
+    - Owner-only, stays Thai: admin chat commands (/ban, /autorestart, /restart) and the CheatWatchGui admin panel.
+    - Not visible: VipConfig color names are only used as button instance names.
+    - Kept on purpose: BoomboxConfig song titles are real Thai song names.
+  - Check:
+    - Both edited scripts compile.
+    - Studio Play with `DevForceLang = "en"`: MusicPanel shows "✨ Sound Effects" and there are no new errors.
+    - The restart-cancel toast was not triggered: it needs a cross-server /restart cancel.
+    - `DevForceLang` cleared.
+  - Backups: `backups/RestartNotice_before_i18nSystem_20261123.lua`, `backups/BackgroundMusic_before_i18nSystem_20261123.lua` (size + hash checked against Studio).
+  - Studio only, not published.
+
+- 2026-11-23 — i18n phase 4: world signs, boards, NPC bubbles and prompts are now English for English players (user: "ทำเฟส 4 ต่อ").
+  - New `StarterPlayer.StarterPlayerScripts.WorldTextLocalizer` (LocalScript, does nothing for Thai players). It rewrites the TextLabel/TextButton text inside SurfaceGui/BillboardGui in `workspace` on that player's screen only, and again every time the server changes the text. Lookup order: a `TextEn` attribute on the label, then the EXACT table, then PATTERNS, then line by line. Names come from Localization `Crop_*`, FishingConfig rods, MountConfig, OrchardConfig (trees and titles), PetRarity and ChickenConfig colors/mutations.
+    - Covers: zone and shop signs, the orchard (lot labels, gates, shops, shopkeeper), the beach bar and stage, boxing ring, scoreboard and its board, Level/Playtime/Donor/Chicken/ChickenContest/CropContest/Wanted boards, rod showcases, the chicken show tags, UncleManao tree signs and speech bubbles, and the nametag AFK/orchard titles.
+    - New signs need an entry there, or the server can set a `TextEn` attribute. To undo, delete it.
+  - `ServerScriptService.GachaService`: the showcase labels (Chance, PetName, Perks, Perks2, EventTime) also get a `TextEn` attribute with English text. `chanceText`, `perksText`, `specialPerksText` and `fmtTimeLeft` take a `lang`.
+  - `PetSystem.PetController`: pets get a `PetDisplayNameEn` attribute. `PetHungerClient` uses it for the F feed prompt and the pet picker.
+  - `PromptLocalizer`: new prompt translations (orchard cut/plant/steal/water/move, dry-tree "🍂 Dry <tree>", "🌳 Lot N", krathong, UncleManao, Kindness Shop, fertilizer machine, wishing pond).
+  - Check: all edited scripts compile. Studio Play with `DevForceLang = "en"`: after 25 s there was **no Thai left** in any workspace SurfaceGui/BillboardGui text or ProximityPrompt (before the fixes: 18 texts and 6 prompts). Samples: "🌈 Rainbow · Gold chicken ⚡4 🥚5 🟡5", "Red: empty", "⏰ Most Dedicated Farmers ⏰", gacha "★ Secret · Coins 0.1% · Robux 0.25% ★" / "Conservation Platypus" / "⏳ … · 7d 0h left". No new errors. `DevForceLang` cleared.
+  - Not checked by eye: sign text fit on screen, and signs that only appear later (event boards, other servers' states).
+  - Backups: `backups/{PromptLocalizer,GachaService,PetController,PetHungerClient}_before_i18nWorld_20261123.lua` (size + hash checked against Studio).
+  - Studio only, not published.
+
+- 2026-11-25 — i18n final pass: the screens still Thai for English players after the 2026-11-25 check (user: "แก้ทั้งหมด").
+  - Pet menu 🐾:
+    - `PetSystem.PetDefinitions`: new `DESC_EN` / `HINT_EN` / `PERK_EN` tables give English descriptions to the 8 pets that had none, English unlock hints to 4, and Platypus's showcase perk.
+    - `PetSystem.PetManager`: `buildPetList` sends the pet name and unlock hint in the player's language. Ability names use the new `ABILITY_EN` table via `abilityNameFor`, in both the menu list and the active-abilities list.
+    - `StarterPlayerScripts.PetHelperToggleButton`: rarity badges use `PetRarity.NameOf(…, lang)` (3 places), and the English "(yield xN)" is shortened like the Thai one.
+  - Server messages:
+    - `LastPosition`, `PlaytimeRewards`, `BirthdayEventService` (say + RemoteFunction result): routed through `TextEn`.
+    - `FishIndex`: otter reward and skip toasts use Pick, and its RemoteFunction result goes through TextEn.
+    - `WeatherService`: rain start/stop is sent per player in that player's language (it used to be FireAllClients in Thai).
+    - `LoginAnnouncementService`: 2 errors use Pick.
+    - `TextEn`: new EXACT entries and PATTERNS (spawn notices, playtime ticket and coins, birthday reward, fish book loading) and the name "อรพร" → "Oraporn".
+  - Small screens:
+    - `WeatherClient`: rain pill.
+    - `TopMenuGamepad`: gamepad hint.
+    - `WarpGui`: fish list uses `FishingConfig.FishName(id, lang)` and "Fish:".
+    - `SultanShopGui`: English title is "👑 Sultan Pack" (it was "👑 สุลต่าน Pack").
+    - `PromptLocalizer`: "ดูกิจกรรม".
+  - Check:
+    - All 15 edited scripts compile.
+    - TextEn samples translate.
+    - Studio Play with `DevForceLang = "en"`, after 30 s: **0 Thai texts in PlayerGui** (was 109) and 0 in world signs/prompts. Pet row sample: "Common | Cute Kitten | 🌾 Helps harvest 🍀 Luck x2". No new errors. `DevForceLang` cleared.
+    - Not triggered: rain start/stop, playtime rewards, respawn notices, fish book skip.
+  - Note: `multi_edit` `replace_all` did not change the `rarityBadge.Text = tier.DisplayName` lines (it reported success). They were redone one by one and checked in the source.
+  - Backups: `backups/{PetManager,PetDefinitions,PetHelperToggleButton,LastPosition,PlaytimeRewards,WeatherService,FishIndex,LoginAnnouncementService,BirthdayEventService,WeatherClient,TopMenuGamepad,WarpGui,SultanShopGui}_before_i18nFinal_20261125.lua` (size + hash checked against Studio). PromptLocalizer's backup is `backups/PromptLocalizer_before_i18nWorld_20261123.lua`.
+  - Studio only, not published.
+
+- 2026-11-25 — i18n re-check (user: "ตรวจสอบต่อครบหรือยัง"): found 2 more places where server window data was Thai, and fixed them.
+  - `ServerScriptService.GachaService` `infoFor`: ticket `DisplayName` now comes from `ticketName(player, …)`. The gacha tabs and ticket count show "Normal Ticket" / "Premium Ticket" for English players.
+  - `ServerScriptService.AutoFeeder` info: the pet list uses the `PetDisplayNameEn` attribute for English players (Auto Feeder window, pet on/off buttons).
+  - Check:
+    - Client code scan: no untranslated player-facing text (only an internal matching table).
+    - Server scan: only admin/Studio-only lines left, plus lines already covered by TextEn.
+    - Studio Play with `DevForceLang = "en"`: fired all 35 client `Open*` BindableEvents and the 10 server `*Open` RemoteEvents to open every window (no clicks or purchases), then scanned PlayerGui. 0 Thai, apart from the account's own VIP status text (".zZงีบหลับZz.", which the player typed) and the admin panel.
+    - Seen in the log: a `ShopGui:756` ipairs error. It came from my test firing `RequestShopOpen` without the shop data the server normally sends; it is not from this change.
+    - `DevForceLang` cleared.
+  - Backups: `backups/GachaService_before_i18nNames_20261125.lua`, `backups/AutoFeeder_before_i18nNames_20261125.lua` (size + hash checked against Studio).
+  - Studio only, not published.
