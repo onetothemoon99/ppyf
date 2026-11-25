@@ -1276,6 +1276,19 @@ NOT yet translated (still Thai): GachaGui/GachaService/GachaAnnouncer/GachaShowc
 
 2026-11-16: pet food machine done (PetFoodGui `tr()`, PetFoodConverter `L(player, th, en)` for messages + toasts; recipe label TextScaled). Studio only.
 
+2026-11-23 audit + phase 1 (Studio only). The "NOT yet translated" list above is out of date: almost every client GUI is now bilingual (Gacha, VIP, Sultan, AutoFeeder, pets, mounts, chicken, orchard…).
+- Phase 1 done: server messages. The new `ServerScriptService.TextEn` translates at one point (`TextEn.Result` on RemoteFunction results, `TextEn.For` in notify) for SultanService, AutoFeeder, MountService, MountGachaService and GachaService. GachaService, VipService and PetManager also got line-by-line `L()` edits.
+- Remaining plan:
+  - Phase 2: DONE 2026-11-23 (Studio only). All gift RemoteFunctions plus CommunityReward and the PlantingSystem quota gift are wired to TextEn.
+  - Phase 3: DONE 2026-11-23 (Studio only). Only RestartNotice (cancel toast) and the BackgroundMusic "✨ Sound Effects" label needed changes; the rest was already bilingual or owner-only. Boombox song titles stay Thai on purpose (real song names).
+  - Phase 4: DONE 2026-11-23 (Studio only). The new client `StarterPlayerScripts.WorldTextLocalizer` translates world SurfaceGui/BillboardGui text for English players; the server can set a `TextEn` attribute instead (GachaService showcase does). Pets carry `PetDisplayNameEn`. The Play check found 0 Thai world texts/prompts left. New signs: add them to WorldTextLocalizer EXACT/PATTERNS; new prompts: add them to PromptLocalizer.
+  - 2026-11-25 final pass DONE (Studio only): pet menu (PetDefinitions DESC_EN/HINT_EN, PetManager ABILITY_EN + localized names/hints, rarity via PetRarity.NameOf), LastPosition/PlaytimeRewards/Weather/FishIndex/LoginAnnouncement/Birthday messages, weather pill, gamepad hint, warp fish list, sultan title. The Play scan showed 0 Thai in PlayerGui and world. Still Thai on purpose: admin-only text, Boombox song titles, leaderstats names.
+  - Gotcha: Studio MCP multi_edit `replace_all` can report success without changing anything. Re-check the source after using it.
+  - Leaderstats names ("เหรียญ", "เลเวล") stay Thai: many scripts look them up by name.
+- Gotchas:
+  - In execute_luau, never `sub()` Thai text at a byte offset. Invalid UTF-8 makes the call time out. Use `utf8.offset`.
+  - Script backups: append `string.rep("x", 20000)` so the result spills to a tool-results file, and use BEGIN/END markers.
+
 Tested in Play with DevForceLang = "en": all phase-1 GUIs show English, prompts translated, no errors in the client/server logs, fish/bait/rod tool names English. NOT tested: a real English-locale account, server notices triggered by real actions (warp cooldown, carry requests…), phone layout (English strings are longer: check cards/buttons for overflow on phones).
 
 Gotchas:
