@@ -5429,3 +5429,10 @@
     - `DevForceLang` cleared.
   - Backups: `backups/GachaService_before_i18nNames_20261125.lua`, `backups/AutoFeeder_before_i18nNames_20261125.lua` (size + hash checked against Studio).
   - Studio only, not published.
+
+## 2026-11-26 — EXP scarecrow opened to players (not published yet)
+  - User: "เปิดได้เลยจะเอาเข้าตอน 01:00". `ReplicatedStorage.LuckConfig`: `XP_BOOSTER_DEV_ONLY = true` → `false`. On live the `xp` tier now stays, so the shop sells and buys back the EXP scarecrow (40,000 / 20,000 coins), the ghost pet can place it, the buff pill shows and the XP bonus applies (owner x1.5, others x1.25).
+  - Check: the module compiles; a copy acting as a live server (IsStudio = false) keeps the `xp` tier.
+  - Still not tested in Play: buying/selling, placing, the buff pill, bag save and reload, real XP gain. The bag card still shows the 🍀 strip icon.
+  - Undo: set `XP_BOOSTER_DEV_ONLY = true`. Backup: `backups/LuckConfig_before_xpOpen_20261126.lua` (hash-checked against Studio).
+  - Studio only. The user plans to publish at 01:00; not published as of this entry.
