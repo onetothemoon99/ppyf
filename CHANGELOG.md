@@ -5436,3 +5436,12 @@
   - Still not tested in Play: buying/selling, placing, the buff pill, bag save and reload, real XP gain. The bag card still shows the 🍀 strip icon.
   - Undo: set `XP_BOOSTER_DEV_ONLY = true`. Backup: `backups/LuckConfig_before_xpOpen_20261126.lua` (hash-checked against Studio).
   - Studio only. The user plans to publish at 01:00; not published as of this entry.
+
+## 2026-11-26 — Phoenix, Little Frog and Little Dragonfly rods opened to players (not published yet)
+  - User: "เปิดฟีนิกซ์+กบ เบ็ดแมลงปอน้อย ด้วย" (to go out with the EXP scarecrow at 01:00).
+  - `ReplicatedStorage.FishingConfig`: removed `DevOnly = true` from `Rods.Phoenix`, `Rods.Froggy` and `Rods.Dragonfly` (replaced by a comment). On live: Phoenix (199 R$) and Froggy (99 R$) are sold in the fishing shop with the 🎁 gift button; owned rods are restored on join; `RodShowcase` keeps `Case_Phoenix` / `Case_Froggy` and their otters. Dragonfly stays craft-only (OnSale false; `DevCoinPrice` still only works in Studio). Dragonfly has no showcase case.
+  - `ReplicatedStorage.CraftConfig`: removed `DevOnly = true` from the `Dragonfly` recipe, so the craft card shows on live (2,000,000 coins + junk + Diamond 10 / Ruby 8).
+  - Check: both modules compile. Copies acting as a live server: Phoenix/Froggy OnSale true with gift IDs, not hidden; Dragonfly not hidden, OnSale false; Dragonfly recipe present.
+  - Still not tested: real Robux purchase/gift, craft at the bench, effects in Play.
+  - Undo: put `DevOnly = true,` back on those rods/recipe. Backups: `backups/FishingConfig_before_rodsLive_20261126.lua`, `backups/CraftConfig_before_rodsLive_20261126.lua` (hash-checked against Studio).
+  - Studio only. The user plans to publish at 01:00; not published as of this entry.
