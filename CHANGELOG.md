@@ -5452,3 +5452,11 @@
   - Check: compiles; V2.1 is the first update row. Not seen on screen.
   - Backup: `backups/LoginAnnouncementConfig_before_v21_20261126.lua` (hash-checked against Studio).
   - Studio only. The user plans to publish at 01:00; not published as of this entry.
+
+## 2026-11-26 — EXP scarecrow and the 3 new rods closed again (not in this release)
+  - User: "ปิดเบ็ดกับหุ่นไว้ก่อน ยังไม่เอาเข้ารอบนี้". Undid the two "opened to players" entries above.
+  - `ReplicatedStorage.LuckConfig` (`XP_BOOSTER_DEV_ONLY = true`), `ReplicatedStorage.FishingConfig` (`DevOnly = true` on Phoenix, Froggy, Dragonfly) and `ReplicatedStorage.CraftConfig` (`DevOnly = true` on the Dragonfly recipe) are now byte-identical to `backups/LuckConfig_before_xpOpen_20261126.lua`, `backups/FishingConfig_before_rodsLive_20261126.lua` and `backups/CraftConfig_before_rodsLive_20261126.lua` (hash-checked).
+  - Check: all 3 compile. Copies acting as a live server: no `xp` tier; Phoenix/Froggy/Dragonfly hidden and not on sale; no Dragonfly recipe. In Studio they still work for testing.
+  - Not changed: the login announcement V2.1 text still mentions the new rods and the EXP scarecrow.
+  - Backups of the opened state: `backups/{LuckConfig,FishingConfig,CraftConfig}_before_reclose_20261126.lua` (hash-checked).
+  - Studio only, not published.
